@@ -34,8 +34,10 @@ struct ServerRowActions: View {
             Button("Stop", systemImage: "stop.circle", role: .destructive) {
                 model.stopFlow.requestStop(entry)
             }
-            .disabled(model.stopFlow.phase(for: entry.port) != nil)
-            .help("Stop this server (SIGTERM, after confirmation)")
+            .disabled(!entry.isStoppable || model.stopFlow.phase(for: entry) != nil)
+            .help(entry.isStoppable
+                  ? "Stop this server (SIGTERM, after confirmation)"
+                  : "System, daemon and app-helper processes can't be stopped from here")
         }
         .labelStyle(.titleAndIcon)
         .buttonStyle(.bordered)

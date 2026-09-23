@@ -20,13 +20,13 @@ struct ProbeScheduler {
     /// than `maxAge`. Hidden entries and entries already being probed are skipped.
     func entriesNeedingProbe(
         _ entries: [ServerEntry],
-        records: [Int: ProbeRecord],
+        records: [ServerEntry.ID: ProbeRecord],
         now: Date,
         maxAge: TimeInterval
     ) -> [ServerEntry] {
         entries.filter { entry in
             guard !entry.isHidden, !inFlight.contains(entry.probeKey) else { return false }
-            guard let record = records[entry.port], record.key == entry.probeKey else { return true }
+            guard let record = records[entry.id], record.key == entry.probeKey else { return true }
             return now.timeIntervalSince(record.probedAt) >= maxAge
         }
     }

@@ -104,7 +104,7 @@ import TermWebCore
         detector.scenario = scenario
         await model.refresh(.timer)
         #expect(model.probe(for: old) == nil)
-        #expect(model.probeRecords[5173] == nil)
+        #expect(!model.probeRecords.values.contains { $0.key.port == 5173 })
     }
 
     @Test func headerRefinesARuntimeGuess() async {

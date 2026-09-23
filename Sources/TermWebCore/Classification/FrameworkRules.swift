@@ -8,7 +8,12 @@ enum FrameworkRules {
 
     static let argv: [ArgvRule] = [
         rule("Next.js") { $0.hasPrefix("next-server") || $0.has("next", followedBy: ["dev", "start"]) },
-        rule("Vite") { $0.has("vite") },
+        // Meta-frameworks run their dev server through the `vite` binary; the manifest
+        // tells them apart from a plain Vite app.
+        { view, manifest in
+            guard view.has("vite") else { return nil }
+            return manifest.flatMap(viteMetaFramework) ?? "Vite"
+        },
         rule("Astro") { $0.has("astro") },
         rule("Remix") { $0.has("remix") || $0.has("remix-serve") },
         rule("React Router") { $0.has("react-router") },
@@ -43,6 +48,27 @@ enum FrameworkRules {
         rule("PHP built-in server") { $0.hasPrefix("php") && $0.hasArgument("-S") },
     ]
 
+    /// Frameworks whose dev server is started as `vite`, keyed by their package.json dependency.
+    static let viteMetaFrameworks: [(dependency: String, name: String)] = [
+        ("@sveltejs/kit", "SvelteKit"),
+        ("@builder.io/qwik-city", "Qwik"),
+        ("@qwik.dev/router", "Qwik"),
+        ("@solidjs/start", "SolidStart"),
+        ("@tanstack/react-start", "TanStack Start"),
+        ("@tanstack/solid-start", "TanStack Start"),
+        ("@react-router/dev", "React Router"),
+        ("@remix-run/dev", "Remix"),
+        ("@analogjs/platform", "Analog"),
+        ("vike", "Vike"),
+        ("astro", "Astro"),
+        ("nuxt", "Nuxt"),
+    ]
+
+    @Sendable static func viteMetaFramework(_ manifest: ManifestFacts) -> String? {
+        guard manifest.kinds.contains(.packageJSON) else { return nil }
+        return viteMetaFrameworks.first { manifest.dependencies.contains($0.dependency) }?.name
+    }
+
     /// package.json dependencies, most specific first (meta-frameworks depend on vite).
     /// `scriptWord` is looked for in `scripts.dev` when no dependency matched.
     static let packageDependencies: [(dependency: String, scriptWord: String, name: String)] = [
@@ -51,6 +77,10 @@ enum FrameworkRules {
         ("@remix-run/*", "remix", "Remix"),
         ("@react-router/dev", "react-router", "React Router"),
         ("@sveltejs/kit", "svelte-kit", "SvelteKit"),
+        ("@builder.io/qwik-city", "qwik", "Qwik"),
+        ("@qwik.dev/router", "qwik", "Qwik"),
+        ("@solidjs/start", "solid-start", "SolidStart"),
+        ("@tanstack/react-start", "tanstack", "TanStack Start"),
         ("nuxt", "nuxt", "Nuxt"),
         ("@angular/core", "ng serve", "Angular"),
         ("gatsby", "gatsby", "Gatsby"),

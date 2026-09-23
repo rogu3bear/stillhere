@@ -12,9 +12,9 @@ public struct DarwinSignalSystem: SignalSystem {
         kill(pid, 0) == 0 || errno == EPERM
     }
 
-    public func startTime(of pid: Int32) -> StartTimeLookup {
+    public func lookup(_ pid: Int32) -> ProcessLookup {
         switch Libproc.bsdInfo(pid) {
-        case .found(let info): .found(info.startTime)
+        case .found(let info): .found(LiveProcess(startTime: info.startTime, name: info.name, uid: info.uid))
         case .notFound: .notFound
         case .denied: .denied
         }

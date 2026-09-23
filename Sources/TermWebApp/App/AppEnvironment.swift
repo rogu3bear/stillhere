@@ -52,7 +52,7 @@ struct AppStores {
 nonisolated struct InertSignalSystem: SignalSystem {
     func send(_ signal: Int32, to pid: Int32) -> Int32 { ESRCH }
     func isAlive(_ pid: Int32) -> Bool { false }
-    func startTime(of pid: Int32) -> StartTimeLookup { .notFound }
+    func lookup(_ pid: Int32) -> ProcessLookup { .notFound }
 }
 
 struct InertLoginItem: LoginItemService {

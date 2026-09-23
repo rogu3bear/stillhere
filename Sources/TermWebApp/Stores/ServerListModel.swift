@@ -12,7 +12,7 @@ final class ServerListModel {
     }
 
     private(set) var servers: [ServerEntry] = []
-    private(set) var probeRecords: [Int: ProbeRecord] = [:]
+    private(set) var probeRecords: [ServerEntry.ID: ProbeRecord] = [:]
     private(set) var lastError: String?
     private(set) var isRefreshing = false
     private(set) var lastRefreshed: Date?
@@ -59,7 +59,7 @@ final class ServerListModel {
 
     /// The probe for this exact process, if one has been taken.
     func probe(for entry: ServerEntry) -> ProbeResult? {
-        guard let record = probeRecords[entry.port], record.key == entry.probeKey else { return nil }
+        guard let record = probeRecords[entry.id], record.key == entry.probeKey else { return nil }
         return record.result
     }
 
@@ -157,6 +157,7 @@ final class ServerListModel {
         do {
             let entries = try await detector.scan(config: settings.ignoreConfiguration)
             if entries != servers { servers = entries }
+            stopFlow.prune(keeping: servers)
             lastError = nil
             lastRefreshed = clock.now
             dropStaleProbes()
@@ -166,7 +167,7 @@ final class ServerListModel {
     }
 
     private func dropStaleProbes() {
-        let current = Dictionary(uniqueKeysWithValues: servers.map { ($0.port, $0.probeKey) })
+        let current = Dictionary(uniqueKeysWithValues: servers.map { ($0.id, $0.probeKey) })
         let kept = probeRecords.filter { current[$0.key] == $0.value.key }
         if kept.count != probeRecords.count { probeRecords = kept }
     }
@@ -189,7 +190,7 @@ final class ServerListModel {
     /// Stores a probe only if the port still belongs to the process that was probed.
     func apply(_ result: ProbeResult, for key: ServerEntry.ProbeKey) {
         guard servers.contains(where: { $0.probeKey == key }) else { return }
-        probeRecords[key.port] = ProbeRecord(key: key, result: result, probedAt: clock.now)
+        probeRecords[key.entryID] = ProbeRecord(key: key, result: result, probedAt: clock.now)
     }
 
     static func describe(_ error: any Error) -> String {

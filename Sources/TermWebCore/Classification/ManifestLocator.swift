@@ -4,13 +4,16 @@ import Foundation
 public enum ManifestLocator {
     /// Walks up from `cwd`. Stops (returning nil) at `home`, at `/`, or after checking a
     /// directory that contains `.git` (the repository root) without finding a manifest.
+    /// Paths are only normalised lexically (`.`/`..`), never re-rooted: `standardizedFileURL`
+    /// would strip `/private` from `/private/tmp/...`, so the project root would no longer
+    /// be a prefix of the cwd the process reported.
     public static func locate(
         from cwd: String,
         home: String,
         fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
     ) -> URL? {
-        let homePath = URL(fileURLWithPath: home).standardizedFileURL.path
-        var directory = URL(fileURLWithPath: cwd, isDirectory: true).standardizedFileURL
+        let homePath = URL(fileURLWithPath: home, isDirectory: true).standardized.path
+        var directory = URL(fileURLWithPath: cwd, isDirectory: true).standardized
         while true {
             let path = directory.path
             if path == "/" || path == homePath { return nil }

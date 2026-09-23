@@ -3,12 +3,13 @@ import Foundation
 /// Pure classification of a listener group as visible (nil) or hidden (with a reason).
 ///
 /// Rule order, first match wins:
-/// 0. interpreters (python*, node, bun, deno, ruby, php, java) skip rules 1-3
+/// 0. interpreters (python*, node, bun, deno, ruby, php, java) skip rules 1-3 and 5
 /// 1. executable under a system prefix -> `.system`
 /// 2. cwd is `/` -> `.daemon`
 /// 3. executable inside `*.app/Contents/` -> `.appHelper`
 /// 4. process name in the name list -> `.ignoredName`
-/// 5. port in the port list -> `.databasePort`
+/// 5. port in the port list -> `.databasePort` (a database is never an interpreter
+///    process, and dev servers bind whatever port they are given)
 public enum IgnoreClassifier {
     static let systemPrefixes = ["/System/", "/usr/libexec/", "/usr/sbin/", "/Library/Apple/"]
     static let interpreters: Set<String> = ["node", "bun", "deno", "ruby", "php", "java"]
@@ -27,7 +28,8 @@ public enum IgnoreClassifier {
         let exeName = executablePath.map { ($0 as NSString).lastPathComponent }
         let candidates = (names + [exeName].compactMap { $0 }).filter { !$0.isEmpty }
 
-        if !candidates.contains(where: isInterpreter) {
+        let isInterpreter = candidates.contains(where: isInterpreter)
+        if !isInterpreter {
             if config.hideSystemExecutables, let path = executablePath,
                systemPrefixes.contains(where: path.hasPrefix) {
                 return .system
@@ -42,7 +44,7 @@ public enum IgnoreClassifier {
                 return .ignoredName(match)
             }
         }
-        if config.ports.contains(port) { return .databasePort(port) }
+        if !isInterpreter, config.ports.contains(port) { return .databasePort(port) }
         return nil
     }
 

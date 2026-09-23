@@ -53,7 +53,19 @@ import Testing
         #expect(classify("Adobe Desktop Service", exe: nil, cwd: "/tmp", port: 15_292) == .ignoredName("Adobe Desktop Service"))
     }
 
+    @Test func interpretersAreNeverHiddenByPort() {
+        // Live repro: `python3 -m http.server 8123` was hidden as a database port.
+        #expect(classify("Python", exe: "/opt/homebrew/bin/python3.13", cwd: "/Users/dev/site", port: 8123) == nil)
+        let withPort = IgnoreConfiguration(ports: [8123, 5432])
+        #expect(classify("Python", exe: "/opt/homebrew/bin/python3.13", cwd: "/tmp/site", port: 8123, config: withPort) == nil)
+        #expect(classify("node", exe: "/usr/local/bin/node", cwd: "/Users/dev/app", port: 5432, config: withPort) == nil)
+        #expect(classify("bun", exe: nil, cwd: nil, port: 6379) == nil)
+        // Non-interpreters on the list are still hidden.
+        #expect(classify("clickhouse", exe: "/opt/clickhouse", cwd: "/tmp", port: 8123, config: withPort) == .databasePort(8123))
+    }
+
     @Test func defaultsNeverHideAirPlayPortsOrPort9000ByPort() {
+        #expect(!config.ports.contains(8123))
         #expect(!config.ports.contains(5000))
         #expect(!config.ports.contains(7000))
         #expect(!config.ports.contains(9000))

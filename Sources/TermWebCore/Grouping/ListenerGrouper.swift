@@ -9,14 +9,33 @@ public struct ListenerGroup: Sendable, Hashable {
     public var memberPIDs: [Int32] { [rootPID] + workerPIDs }
 }
 
-/// Pure grouping of listener records by port.
+/// Pure grouping of listener records by port and process tree.
 public enum ListenerGrouper {
-    /// Groups by port, merging IPv4/IPv6 sockets. The root is the member whose parent is
-    /// not in the group (ties go to the lowest PID); the other members are workers.
+    /// Groups by port, merging IPv4/IPv6 sockets and processes linked by a parent/child
+    /// relation on that port (forked workers). Unrelated processes that share a port
+    /// (SO_REUSEPORT, or different bind addresses) become separate groups. The root is the
+    /// member whose parent is not in the group (ties go to the lowest PID).
     public static func group(_ records: [ListenerRecord]) -> [ListenerGroup] {
         Dictionary(grouping: records, by: \.port)
-            .map { port, members in makeGroup(port: port, members: members) }
-            .sorted { $0.port < $1.port }
+            .flatMap { port, members in processTrees(members).map { makeGroup(port: port, members: $0) } }
+            .sorted { ($0.port, $0.rootPID) < ($1.port, $1.rootPID) }
+    }
+
+    /// Splits one port's records into connected components of the parent/child graph.
+    private static func processTrees(_ members: [ListenerRecord]) -> [[ListenerRecord]] {
+        let pids = Set(members.map(\.pid))
+        var representative = Dictionary(uniqueKeysWithValues: pids.map { ($0, $0) })
+        func find(_ pid: Int32) -> Int32 {
+            var current = pid
+            while let next = representative[current], next != current { current = next }
+            return current
+        }
+        for record in members {
+            guard let ppid = record.ppid, pids.contains(ppid) else { continue }
+            let (a, b) = (find(record.pid), find(ppid))
+            if a != b { representative[max(a, b)] = min(a, b) }
+        }
+        return Dictionary(grouping: members) { find($0.pid) }.values.map { $0 }
     }
 
     private static func makeGroup(port: Int, members: [ListenerRecord]) -> ListenerGroup {

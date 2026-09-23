@@ -28,9 +28,9 @@ struct StopConfirmationBar: View {
         case .confirmTerminate(let target):
             Text("Stop \(target.name) (PID \(target.pid)) on :\(port)?")
             Spacer(minLength: 4)
-            Button("Cancel") { flow.dismiss(port: port) }
+            Button("Cancel") { flow.dismiss(entry) }
                 .keyboardShortcut(.cancelAction)
-            Button("Stop", role: .destructive) { Task { await flow.confirmTerminate(port: port) } }
+            Button("Stop", role: .destructive) { Task { await flow.confirmTerminate(entry) } }
                 .buttonStyle(.borderedProminent)
                 .tint(.red)
         case .terminating(let target):
@@ -38,13 +38,11 @@ struct StopConfirmationBar: View {
             Text("Sent SIGTERM to PID \(target.pid); waiting for it to exit…")
         case .stillRunning(let target):
             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-            Text(target.pid == entry.rootPID
-                 ? "Still running after SIGTERM."
-                 : "PID \(target.pid) (\(target.name)) still holds :\(port).")
+            Text("PID \(target.pid) (\(target.name)) is still running after SIGTERM.")
             Spacer(minLength: 4)
-            Button("Cancel") { flow.dismiss(port: port) }
+            Button("Cancel") { flow.dismiss(entry) }
                 .keyboardShortcut(.cancelAction)
-            Button("Force Kill", role: .destructive) { Task { await flow.confirmForceKill(port: port) } }
+            Button("Force Kill", role: .destructive) { Task { await flow.confirmForceKill(entry) } }
                 .buttonStyle(.borderedProminent)
                 .tint(.red)
                 .help("Send SIGKILL to PID \(target.pid)")
@@ -55,7 +53,7 @@ struct StopConfirmationBar: View {
             Image(systemName: "xmark.octagon.fill").foregroundStyle(.red)
             Text(message).fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 4)
-            Button("Dismiss") { flow.dismiss(port: port) }
+            Button("Dismiss") { flow.dismiss(entry) }
         }
     }
 }

@@ -53,8 +53,21 @@ import Testing
         try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: true)
         try "{}".write(to: project.appending(path: "package.json"), atomically: true, encoding: .utf8)
 
-        #expect(ManifestLocator.locate(from: nested.path, home: home.path)?.path == project.standardizedFileURL.path)
-        #expect(ManifestLocator.locate(from: project.path, home: home.path)?.path == project.standardizedFileURL.path)
+        #expect(ManifestLocator.locate(from: nested.path, home: home.path)?.path == project.path)
+        #expect(ManifestLocator.locate(from: project.path, home: home.path)?.path == project.path)
+    }
+
+    @Test func locatorKeepsThePrivatePrefixOfTheCwd() throws {
+        let base = URL(fileURLWithPath: "/private/tmp/term-web-tests-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: base) }
+        let nested = base.appending(path: "app/src")
+        try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: true)
+        try "{}".write(to: base.appending(path: "app/package.json"), atomically: true, encoding: .utf8)
+
+        let root = try #require(ManifestLocator.locate(from: nested.path, home: "/nonexistent-home"))
+        #expect(root.path == base.path + "/app")
+        #expect(nested.path.hasPrefix(root.path))
+        #expect(ManifestLocator.locate(from: base.path + "/app/src/../src", home: "/nonexistent-home")?.path == root.path)
     }
 
     @Test func locatorStopsAtGitRootAndHome() throws {

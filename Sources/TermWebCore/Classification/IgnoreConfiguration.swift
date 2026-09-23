@@ -38,7 +38,9 @@ public struct IgnoreConfiguration: Sendable, Hashable, Codable {
         "Dropbox", "Spotify", "figma_agent", "Raycast", "Code Helper*", "Cursor Helper*", "Adobe*",
     ]
 
-    /// Well-known database/broker ports. 5000 and 7000 are deliberately absent: AirPlay
-    /// is hidden by name because Flask defaults to 5000. 9000 is absent (PHP, MinIO).
-    public static let defaultPorts = [5432, 3306, 6379, 27017, 11211, 9200, 9300, 5672, 15672, 2379, 4222, 8123]
+    /// Well-known database/broker ports. Ports that dev servers commonly use are deliberately
+    /// absent: 5000 and 7000 (AirPlay is hidden by name because Flask defaults to 5000),
+    /// 8123 (`python -m http.server 8123`, Home Assistant) and 9000 (PHP, MinIO).
+    /// Interpreter processes are never hidden by port (see `IgnoreClassifier`).
+    public static let defaultPorts = [5432, 3306, 6379, 27017, 11211, 9200, 9300, 5672, 15672, 2379, 4222]
 }

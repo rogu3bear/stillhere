@@ -15,13 +15,17 @@ Each row shows:
 
 Row actions: **Open** in the default browser, **Copy URL**, **Reveal** the
 project in Finder, open the project folder in **Terminal**, and **Stop**. Stop
-asks for confirmation and sends SIGTERM. If the process is still running about
-3 seconds later, it offers SIGKILL. Each signal goes to one process (the
-server's root process, never a process group), and only after checking that its
-start time has not changed, so a reused PID is never signalled.
+asks for confirmation and sends SIGTERM. If that same process is still running
+about 3 seconds later, it offers SIGKILL for it; if it exited and something else
+now holds the port, nothing more is offered. Each signal goes to one process
+(the server's root process, never a process group), and only after checking that
+its start time and name have not changed, so a reused PID is never signalled.
+Stop is never offered for system, daemon or app-helper listeners, and the app
+never signals itself, launchd, or processes owned by another user.
 
 The list refreshes on a timer and whenever you open the menu. IPv4 and IPv6
-listeners on the same port appear as one entry.
+listeners of one process tree on the same port appear as one entry; unrelated
+processes sharing a port get separate entries.
 
 ## Requirements
 
@@ -57,8 +61,9 @@ Detection lives in the `TermWebCore` library, separate from the UI, and runs
 off the main thread.
 
 1. `lsof -nP -iTCP -sTCP:LISTEN -F pcRtn` lists your TCP listening sockets.
-2. Sockets are grouped by port, so IPv4 and IPv6 become one entry and a forked
-   parent and its workers become one server.
+2. Sockets are grouped by port and process tree, so IPv4 and IPv6 become one
+   entry and a forked parent and its workers become one server, while unrelated
+   processes on the same port stay separate.
 3. Process details (working directory, start time, parent PID, full argv) come
    from `libproc` and `sysctl(KERN_PROCARGS2)`.
 4. A classifier hides system and non-dev listeners. A framework detector reads
@@ -85,11 +90,12 @@ These are hidden by default:
   postgres, mysqld, redis-server, mongod, Dropbox, Spotify, `Code Helper*` and
   others. A trailing `*` matches a prefix.
 - well-known database and broker ports: 5432, 3306, 6379, 27017, 11211, 9200,
-  9300, 5672, 15672, 2379, 4222, 8123
+  9300, 5672, 15672, 2379, 4222
 
 Interpreters (`node`, `bun`, `deno`, `python*`, `ruby`, `php`, `java`) are
-never hidden by the first three rules. Ports 5000 and 7000 are not on the port
-list, because Flask uses 5000. AirPlay is hidden by process name instead.
+never hidden by the structural rules or the port list. Ports 5000, 7000, 8123
+and 9000 are not on the port list, because dev servers use them. AirPlay is
+hidden by process name instead.
 
 Edit these in **Settings > Ignore List**. **Reset to Defaults** restores them.
 Turn on **Show hidden servers** in **Settings > General** to list hidden
@@ -160,13 +166,11 @@ Expected results before notarization: `spctl` rejects both the app and the
 package with `source=Unnotarized Developer ID` (exit 3). The script reports this
 and carries on.
 
-**AppleDouble entries.** When the package is built from a sandboxed shell, such
-as an agent's terminal, the files carry a `com.apple.provenance` extended
-attribute that cannot be removed there. pkgbuild then stores `._*` entries in
-the payload and may print `write: Permission denied`. The extracted app still
-verifies, so the signature is unaffected, but build release packages from a
-normal Terminal session and check that `pkgutil --payload-files` shows no `._`
-entries.
+**AppleDouble entries.** pkgbuild turns extended attributes into `._*`
+entries in the payload. `package.sh` stages the app without extended attributes
+and, when the host keeps re-applying `com.apple.provenance` (some agent and
+sandboxed shells do, even outside the sandbox), rewrites the component package
+without those entries. Any `._` entry left in the final payload fails the build.
 
 ## Notarization
 
@@ -184,8 +188,8 @@ scripts/package.sh --force --notary-profile <profile>
 
 With a profile, the script runs `notarytool submit --wait`, staples the ticket
 to the package, validates the staple, and reruns `spctl`, which should then
-report `source=Notarized Developer ID`. You can also set the profile with the
-`NOTARY_PROFILE` environment variable.
+report `source=Notarized Developer ID`. Only the explicit `--notary-profile`
+argument enables notarization; the environment is never consulted.
 
 ## Troubleshooting
 

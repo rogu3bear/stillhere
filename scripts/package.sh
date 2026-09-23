@@ -2,21 +2,24 @@
 # Builds, signs and verifies dist/term-web-<VERSION>.pkg.
 # Usage: scripts/package.sh [--notary-profile NAME] [--force]
 #   --notary-profile NAME  notarize and staple with this notarytool keychain
-#                          profile (or set NOTARY_PROFILE). Without it nothing
-#                          is sent to Apple.
+#                          profile. Only this explicit argument enables
+#                          notarization (the environment is ignored); without
+#                          it nothing is sent to Apple.
 #   --force                replace an existing dist/term-web-<VERSION>.pkg.
 # Identities can be overridden with APP_SIGN_ID and INSTALLER_SIGN_ID
 # (a SHA-1 hash or the full certificate name).
 set -euo pipefail
 source "$(dirname "$0")/common.sh"
 
-NOTARY_PROFILE="${NOTARY_PROFILE:-}"
+# Deliberately not read from the environment: a stray NOTARY_PROFILE must never
+# send anything to Apple.
+NOTARY_PROFILE=""
 FORCE=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --notary-profile) NOTARY_PROFILE="${2:?--notary-profile needs a profile name}"; shift 2 ;;
     --force) FORCE=1; shift ;;
-    -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,11p' "$0"; exit 0 ;;
     *) die "unknown argument: $1" ;;
   esac
 done
@@ -49,16 +52,48 @@ grep -q '^Timestamp=' <<<"$SIGN_INFO" || die "secure timestamp missing"
 [[ -z "$(codesign -d --entitlements - --xml "$APP" 2>/dev/null)" ]] || die "unexpected entitlements"
 
 # 3. Component package that installs term-web.app into /Applications.
+# pkgbuild stores any extended attribute as an AppleDouble ._ entry in the Bom and
+# Payload. Stage a copy without xattrs, resource forks, quarantine or ACLs (the
+# signature lives in the bundle, not in xattrs) and stop copyfile writing ._ files.
+# Some hosts re-apply com.apple.provenance to every file their processes create and
+# refuse to remove it, so the component is then rewritten without ._ entries.
 log "Building component package"
+export COPYFILE_DISABLE=1
 STAGE="$ROOT/build/pkgroot"
 rm -rf "$STAGE" "$COMPONENT"
 mkdir -p "$STAGE"
-ditto "$APP" "$STAGE/$APP_NAME.app"
+ditto --norsrc --noextattr --noqtn --noacl "$APP" "$STAGE/$APP_NAME.app"
+xattr -cr "$STAGE" 2>/dev/null || true
+codesign --verify --deep --strict "$STAGE/$APP_NAME.app"
 pkgbuild --analyze --root "$STAGE" "$ROOT/build/component.plist"
 plutil -replace 0.BundleIsRelocatable -bool NO "$ROOT/build/component.plist"
 pkgbuild --root "$STAGE" --component-plist "$ROOT/build/component.plist" \
   --identifier "$PKG_ID" --version "$VERSION" \
   --install-location /Applications "$COMPONENT"
+
+# Rewrites the flat component without AppleDouble entries: filters the Bom, re-archives
+# the Payload (same odc cpio + gzip, ownership, modes and times) and fixes the file count.
+strip_appledouble() {
+  local component="$1" work="$ROOT/build/component-expanded" count
+  rm -rf "$work"
+  pkgutil --expand "$component" "$work"
+  lsbom "$work/Bom" | grep -v '/\._' > "$ROOT/build/component-bom.txt" || true
+  rm -f "$work/Bom"
+  mkbom -i "$ROOT/build/component-bom.txt" "$work/Bom"
+  tar --format odc --exclude '._*' --no-mac-metadata --no-xattrs --no-acls \
+    -czf "$work/Payload.clean" "@$work/Payload"
+  mv "$work/Payload.clean" "$work/Payload"
+  count="$(wc -l < "$ROOT/build/component-bom.txt" | tr -d ' ')"
+  sed -i '' "s/numberOfFiles=\"[0-9]*\"/numberOfFiles=\"$count\"/" "$work/PackageInfo"
+  rm -f "$component"
+  pkgutil --flatten "$work" "$component"
+  rm -rf "$work" "$ROOT/build/component-bom.txt"
+}
+COMPONENT_FILES="$(pkgutil --payload-files "$COMPONENT")"
+if grep -q '/\._' <<<"$COMPONENT_FILES"; then
+  log "Removing $(grep -c '/\._' <<<"$COMPONENT_FILES") AppleDouble entries that pkgbuild added for host-applied xattrs"
+  strip_appledouble "$COMPONENT"
+fi
 
 # 4. Product archive with the distribution file, signed with Developer ID Installer.
 log "Building signed product archive"
@@ -71,8 +106,15 @@ productbuild --distribution "$ROOT/build/distribution.xml" --package-path "$ROOT
 # 5. Checks. All are hard failures except spctl, which rejects until notarized.
 log "Verifying package"
 pkgutil --check-signature "$PKG"
-pkgutil --payload-files "$PKG" | grep -qx "./$APP_NAME.app/Contents/MacOS/$APP_NAME" \
+# Capture first: `pkgutil | grep -q` can SIGPIPE pkgutil and fail under pipefail.
+PAYLOAD="$(pkgutil --payload-files "$PKG")"
+grep -qx "./$APP_NAME.app" <<<"$PAYLOAD" || die "payload lacks ./$APP_NAME.app"
+grep -qx "./$APP_NAME.app/Contents/MacOS/$APP_NAME" <<<"$PAYLOAD" \
   || die "payload lacks ./$APP_NAME.app/Contents/MacOS/$APP_NAME"
+if grep -q '/\._' <<<"$PAYLOAD"; then
+  grep '/\._' <<<"$PAYLOAD" >&2
+  die "AppleDouble ._ entries are in the payload"
+fi
 rm -rf "$ROOT/build/expanded" "$ROOT/build/full"
 pkgutil --expand "$PKG" "$ROOT/build/expanded"
 grep -q 'install-location="/Applications"' "$ROOT/build/expanded/$APP_NAME-component.pkg/PackageInfo" \
@@ -82,10 +124,6 @@ grep -q 'hostArchitectures="arm64"' "$ROOT/build/expanded/Distribution" \
 pkgutil --expand-full "$PKG" "$ROOT/build/full"
 codesign --verify --deep --strict --verbose=2 "$ROOT/build/full/$APP_NAME-component.pkg/Payload/$APP_NAME.app"
 log "Payload installs to /Applications/$APP_NAME.app"
-if pkgutil --payload-files "$PKG" | grep -q '/\._'; then
-  warn "AppleDouble ._ entries are in the payload (provenance xattrs, e.g. from a sandboxed shell)."
-  warn "They are harmless to the signature; rebuild from a normal terminal for a clean release."
-fi
 
 set +e
 spctl --assess --type execute -vv "$APP"; app_status=$?

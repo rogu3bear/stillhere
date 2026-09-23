@@ -7,10 +7,13 @@ public struct ServerEntry: Sendable, Hashable, Identifiable {
         public var port: Int
         public var pid: Int32
         public var startTime: Date?
+
+        /// The owning row's `ServerEntry.id`.
+        public var entryID: String { "\(port)/\(pid)" }
     }
 
-    /// Stable row identity across refreshes.
-    public var id: Int { port }
+    /// Stable, unique row identity across refreshes: one row per process tree on a port.
+    public var id: String { probeKey.entryID }
     public var port: Int
     public var rootPID: Int32
     public var workerPIDs: [Int32]
@@ -45,6 +48,9 @@ public struct ServerEntry: Sendable, Hashable, Identifiable {
     }
 
     public var isHidden: Bool { hiddenReason != nil }
+
+    /// False for system, daemon and app-helper listeners: the app never offers to stop those.
+    public var isStoppable: Bool { hiddenReason?.isProtected != true }
 
     /// The URL shown, copied and opened. `localhost` resolves both families.
     public var displayURL: URL { URL(string: "http://localhost:\(port)/")! }

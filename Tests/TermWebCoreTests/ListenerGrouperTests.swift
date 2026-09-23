@@ -29,16 +29,42 @@ import Testing
         #expect(groups.map(\.port) == [5000, 5173, 5432, 8765, 8767, 8769])
     }
 
-    @Test func unrelatedProcessesOnOnePortPickLowestPIDAsRoot() {
+    @Test func unrelatedProcessesOnOnePortAreSeparateEntries() {
         let records = [
             ListenerRecord(pid: 20, ppid: 1, command: "b", family: .ipv6, bindAddress: "::1", port: 9000),
             ListenerRecord(pid: 10, ppid: nil, command: "a", family: .ipv4, bindAddress: "127.0.0.1", port: 9000),
         ]
-        let group = ListenerGrouper.group(records)[0]
-        #expect(group.rootPID == 10)
-        #expect(group.rootCommand == "a")
-        #expect(group.workerPIDs == [20])
-        #expect(group.bindings.count == 2)
+        let groups = ListenerGrouper.group(records)
+        #expect(groups.map(\.rootPID) == [10, 20])
+        #expect(groups.map(\.rootCommand) == ["a", "b"])
+        #expect(groups.allSatisfy { $0.workerPIDs.isEmpty && $0.bindings.count == 1 })
+    }
+
+    @Test func siblingsFromOneShellAreNotMerged() {
+        // Two servers started from the same terminal share a parent that is not listening.
+        let records = [
+            ListenerRecord(pid: 301, ppid: 300, command: "python3", family: .ipv4, bindAddress: "127.0.0.1", port: 8123),
+            ListenerRecord(pid: 302, ppid: 300, command: "node", family: .ipv6, bindAddress: "::1", port: 8123),
+        ]
+        #expect(ListenerGrouper.group(records).map(\.memberPIDs) == [[301], [302]])
+    }
+
+    @Test func processTreeMergesAcrossGenerations() {
+        let records = [
+            ListenerRecord(pid: 100, ppid: 1, command: "gunicorn", family: .ipv4, bindAddress: "*", port: 8000),
+            ListenerRecord(pid: 101, ppid: 100, command: "gunicorn", family: .ipv4, bindAddress: "*", port: 8000),
+            ListenerRecord(pid: 102, ppid: 101, command: "gunicorn", family: .ipv4, bindAddress: "*", port: 8000),
+            ListenerRecord(pid: 900, ppid: 1, command: "other", family: .ipv6, bindAddress: "::1", port: 8000),
+        ]
+        let groups = ListenerGrouper.group(records)
+        #expect(groups.map(\.memberPIDs) == [[100, 101, 102], [900]])
+    }
+
+    @Test func entryIDsAreUniqueForSharedPorts() {
+        let a = ServerEntry(port: 9000, rootPID: 10, bindings: [], command: "a", framework: FrameworkGuess(name: "a", source: .runtime))
+        let b = ServerEntry(port: 9000, rootPID: 20, bindings: [], command: "b", framework: FrameworkGuess(name: "b", source: .runtime))
+        #expect(a.id != b.id)
+        #expect(a.id == a.probeKey.entryID)
     }
 
     @Test func probeHostsFollowBindings() {

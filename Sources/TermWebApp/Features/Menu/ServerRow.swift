@@ -31,7 +31,7 @@ struct ServerRow: View {
                 .help("Open \(entry.displayURL.absoluteString)")
                 .accessibilityLabel("Open in browser")
             }
-            if let phase = model.stopFlow.phase(for: entry.port) {
+            if let phase = model.stopFlow.phase(for: entry) {
                 StopConfirmationBar(entry: entry, phase: phase)
             }
             if isExpanded {
