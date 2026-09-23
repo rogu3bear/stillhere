@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import TermWebCore
 @testable import TermWebCLI
@@ -70,5 +71,40 @@ import TermWebCore
         #expect(await TermWebCLI.run(["wait", "3000", "--timeout", "1e300"], output: output) == 2)
         #expect(await TermWebCLI.run(["stop", "3000", "--pid", "5000000000"], output: output) == 2)
         #expect(await TermWebCLI.run(["stop", "--orphans", "--pid", "42"], output: output) == 2)
+    }
+}
+
+@Suite struct SessionsCheckTests {
+    let t0 = Date(timeIntervalSince1970: 1_000)
+
+    func overview() -> SessionOverview {
+        let web = GitContext(checkoutRoot: "/Users/me/dev/web", branch: "main")
+        return SessionOverview(sessions: [
+            AgentSession(pid: 111, kind: .claudeCode, startTime: t0, checkouts: [web]),
+            AgentSession(pid: 121, kind: .codex, startTime: t0, checkouts: [web]),
+            AgentSession(pid: 131, kind: .claudeCode, startTime: t0, checkouts: [GitContext(checkoutRoot: "/Users/me/dev/api")]),
+        ])
+    }
+
+    @Test func warnsOnlyTheSessionsInACollision() {
+        let warning = SessionsCommand.checkWarning(overview(), callerPID: 111)
+        #expect(warning?.contains("/Users/me/dev/web (main): Codex PID 121") == true)
+        #expect(warning?.contains("ask whether to continue here, wait, or use a separate worktree") == true)
+        #expect(SessionsCommand.checkWarning(overview(), callerPID: 131) == nil)
+        #expect(SessionsCommand.checkWarning(overview(), callerPID: nil) == nil)
+    }
+
+    @Test func tableMarksWorkersAndShortensHome() {
+        let report = SessionReport(
+            session: AgentSession(pid: 9, kind: .claudeCode, startTime: t0,
+                                  checkouts: [GitContext(checkoutRoot: NSHomeDirectory() + "/dev/web", branch: "x")],
+                                  parentSessionPID: 7),
+            servers: [], collisions: [], now: t0.addingTimeInterval(90)
+        )
+        let cells = SessionTable.cells(report)
+        #expect(cells[0] == "Claude Code (worker of 7)")
+        #expect(cells[2] == "1m")
+        #expect(cells[3] == "~/dev/web")
+        #expect(cells[5] == "-")
     }
 }

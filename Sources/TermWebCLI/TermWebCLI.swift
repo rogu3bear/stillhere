@@ -11,6 +11,7 @@ enum TermWebCLI {
       term-web open <port>  open a server in the default browser
       term-web stop <port>  stop a server (SIGTERM; asks first)
       term-web wait <port>  wait until a server answers HTTP, print its URL
+      term-web sessions     agent sessions, their checkouts, and collisions
       term-web mcp          run as an MCP server on stdio (for coding agents)
       term-web help <command>
 
@@ -19,6 +20,8 @@ enum TermWebCLI {
     \(StopCommand.usage)
 
     \(WaitCommand.usage)
+
+    \(SessionsCommand.usage)
     """
 
     static func main() async {
@@ -34,6 +37,7 @@ enum TermWebCLI {
             case "open": return try await OpenCommand(rest, output: output).run()
             case "stop": return try await StopCommand(rest, output: output).run()
             case "wait": return try await WaitCommand(rest, output: output).run()
+            case "sessions": return try await SessionsCommand(rest, output: output).run()
             case "mcp":
                 guard rest.isEmpty else { throw Arguments.UsageError(description: "mcp takes no arguments") }
                 await MCPServer().serve()
@@ -64,6 +68,7 @@ enum TermWebCLI {
         case "open": OpenCommand.usage
         case "stop": StopCommand.usage
         case "wait": WaitCommand.usage
+        case "sessions": SessionsCommand.usage
         default: usage
         }
     }
