@@ -15,6 +15,12 @@ running when their session ends. term-web names the agent behind each server
 and flags the **orphans**: servers whose launching session has ended, so
 nothing will stop them for you.
 
+It also shows which agent sessions are working in which checkout, and warns
+when two **independent** sessions share one working tree, where their edits
+can overwrite each other. A session and a worker it started are not a
+collision. A Claude Code hook can tell an agent about a collision before it
+edits anything.
+
 Each row shows:
 
 - the port and URL (`http://localhost:<port>/`, or `https://` for TLS-only dev
@@ -72,6 +78,12 @@ term-web stop 5173            # SIGTERM after confirming; --yes without a termin
 term-web stop --orphans --yes # clean up every orphaned server
 ```
 
+```sh
+term-web sessions             # agent sessions: checkouts, branches, servers, collisions
+term-web sessions --json      # the same, for tools
+term-web sessions --check     # for a SessionStart hook (see below)
+```
+
 `list --all` includes hidden listeners and `--no-probe` skips the HTTP check.
 `stop` uses the same safety rules as the menu: one verified process, never
 system, daemon or app-helper processes, and SIGKILL only on `--force` and only
@@ -96,6 +108,8 @@ args = ["mcp"]
 Tools:
 
 - `list_servers` (`mine`, `orphans_only`, `include_hidden`, `port`)
+- `list_sessions` (`include_idle`): agent sessions, their checkouts and
+  servers, and collisions
 - `wait_for_server` (`port`, `timeout_seconds` up to 120, `require_http`):
   use this after starting a dev server instead of sleeping
 - `stop_server` (`port`, `pid`, `force`, `any_owner`): by default an agent can
@@ -107,6 +121,26 @@ Tools:
 The server speaks both MCP eras: the stateless 2026-07-28 revision
 (per-request `_meta`, `server/discover`) and the `initialize` handshake of
 2024-11-05 through 2025-11-25.
+
+## Warn agents before they collide
+
+Add a SessionStart hook to Claude Code (`~/.claude/settings.json`, or a
+project's `.claude/settings.json`):
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [{ "type": "command", "command": "term-web sessions --check" }] }
+    ]
+  }
+}
+```
+
+When another independent agent session is already working in the new
+session's checkout, the hook adds a note to the new session's context naming
+that session and asking the agent to check with you before editing files. It
+prints nothing otherwise and always exits 0, so it never blocks a session.
 
 ## How agent tracing works
 
@@ -120,8 +154,18 @@ processes, and skips every other variable byte by byte without decoding it:
 | `CODEX_SANDBOX` | Codex (sandboxed commands) | agent |
 | `AI_AGENT` | agents that follow this convention | agent name |
 
-When no marker is present, a live ancestor process named `claude`, `codex`,
-`cursor-agent`, `gemini`, `aider`, `opencode` or `amp` identifies the agent.
+When no marker is present, a live ancestor agent process identifies the
+agent: by name (`claude`, `codex`, `cursor-agent`, `gemini`, `aider`,
+`opencode`, `amp`), by executable path (the native Claude Code binary lives at
+`~/.local/share/claude/versions/<version>`, so the kernel names it after its
+version), or, for npm installs running under `node`, by the script in argv.
+
+**Sessions** are those agent processes themselves. A session's checkouts are
+the git checkouts that it and its descendant processes work in. Nested agent
+processes are sessions of their own, recorded as workers of the session that
+started them. App-hosted agents such as the Codex app server run at `/` and are
+placed by their child processes' working directories. Sessions that aren't in
+any checkout are hidden unless you pass `--all`.
 
 A server is **orphaned** only when its launcher PID is known (Claude Code's
 `CLAUDE_PID`) and that process has exited, or the PID now belongs to a process
