@@ -129,11 +129,32 @@ struct GoneSignalSystem: SignalSystem {
         #expect(servers.map { $0["port"]?.intValue } == [5173])
     }
 
+    @Test func listSessionsReportsCollisionsAndServers() async throws {
+        let web = GitContext(checkoutRoot: "/Users/dev/Projects/shop", branch: "feat/cart")
+        let detector = FakeServerDetector()
+        var tools = MCPTools(caller: nil, query: ServerQuery(detector: detector))
+        tools.scanSessions = {
+            [
+                AgentSession(pid: 40_900, kind: .claudeCode, startTime: .distantPast, checkouts: [web]),
+                AgentSession(pid: 50_000, kind: .codex, startTime: .distantPast, checkouts: [web]),
+            ]
+        }
+        let response = try await call(MCPServer(tools: tools), ["jsonrpc": "2.0", "id": 13, "method": "tools/call", "params": [
+            "name": "list_sessions",
+        ]])
+        let content = response["result"]?["structuredContent"]
+        guard case .array(let sessions)? = content?["sessions"], case .array(let collisions)? = content?["collisions"] else {
+            Issue.record("missing sessions or collisions"); return
+        }
+        #expect(sessions.first?["servers"] == [5173]) // SampleServers.vite's launcher is 40_900
+        #expect(collisions.first?["sessionPIDs"] == [40_900, 50_000])
+    }
+
     @Test func toolDefinitionsDeclareObjectSchemasAndHints() {
         for tool in MCPTools.definitions {
             #expect(tool["inputSchema"]?["type"] == "object")
             #expect(tool["annotations"]?["readOnlyHint"] != nil)
         }
-        #expect(MCPTools.definitions.map { $0["name"]?.stringValue } == ["list_servers", "wait_for_server", "stop_server"])
+        #expect(MCPTools.definitions.map { $0["name"]?.stringValue } == ["list_servers", "wait_for_server", "list_sessions", "stop_server"])
     }
 }

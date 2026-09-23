@@ -15,7 +15,8 @@ struct MCPServer {
     the coding agent session that started it. After starting a dev server, call \
     wait_for_server instead of sleeping. Use list_servers with mine=true to see the servers \
     this session started, and stop them with stop_server before you finish unless the user \
-    wants them kept running.
+    wants them kept running. Call list_sessions before editing files if another agent \
+    session may be working in the same checkout.
     """
 
     let tools: MCPTools

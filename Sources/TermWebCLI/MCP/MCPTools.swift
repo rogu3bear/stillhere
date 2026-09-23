@@ -9,6 +9,8 @@ struct MCPTools: Sendable {
     var query = ServerQuery()
     var stopper = ServerStopper()
     var maxWait: Double = 120
+    /// Session discovery; injectable so tests never read the real process table.
+    var scanSessions: @Sendable () -> [AgentSession] = { SessionScanner().scan() }
 
     static let definitions: [JSONValue] = [
         [
@@ -44,6 +46,19 @@ struct MCPTools: Sendable {
             "annotations": ["readOnlyHint": true, "openWorldHint": false],
         ],
         [
+            "name": "list_sessions",
+            "title": "List agent sessions",
+            "description": "Lists coding-agent sessions running on this Mac (Claude Code, Codex, ...) with the git checkouts and branches they work in and the servers they started, plus collisions: independent sessions sharing one checkout. Check this before editing files in a checkout another session may be changing.",
+            "inputSchema": [
+                "type": "object",
+                "properties": [
+                    "include_idle": ["type": "boolean", "description": "Include sessions not working in any git checkout."],
+                ],
+                "additionalProperties": false,
+            ],
+            "annotations": ["readOnlyHint": true, "openWorldHint": false],
+        ],
+        [
             "name": "stop_server",
             "title": "Stop a dev server",
             "description": "Stops the server on a port with SIGTERM, verifying the exact process first. Only servers started by this agent session unless any_owner is true. System and helper processes are never stopped.",
@@ -71,6 +86,7 @@ struct MCPTools: Sendable {
         case "list_servers": return try await list(arguments)
         case "wait_for_server": return try await wait(arguments)
         case "stop_server": return try await stop(arguments)
+        case "list_sessions": return try await sessions(arguments)
         default: throw RPCFailure(code: -32602, message: "Unknown tool: \(name)")
         }
     }
@@ -133,6 +149,16 @@ struct MCPTools: Sendable {
             "port": .number(Double(port)),
             "pid": .number(Double(entry.rootPID)),
         ], isError: !result.succeeded)
+    }
+
+    func sessions(_ arguments: JSONValue) async throws -> JSONValue {
+        let overview = SessionOverview(sessions: scanSessions())
+        let servers = (try? await query.entries(.init(includeHidden: true))) ?? []
+        let reports = overview.reports(servers: servers, includeIdle: arguments["include_idle"]?.boolValue ?? false)
+        return try Self.toolResult([
+            "sessions": JSONValue(encoding: reports),
+            "collisions": JSONValue(encoding: overview.collisions.map(CollisionReport.init)),
+        ])
     }
 
     /// Bad arguments come back as tool errors (not JSON-RPC errors) so the model can see
