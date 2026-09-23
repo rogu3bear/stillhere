@@ -19,21 +19,26 @@ done
 
 log "Building release binary (arm64)"
 cd "$ROOT"
-swift build -c release --arch arm64 --product "$APP_NAME"
+swift build -c release --arch arm64 --product "$APP_EXECUTABLE"
+swift build -c release --arch arm64 --product "$CLI_NAME"
 BIN_DIR="$(swift build -c release --arch arm64 --show-bin-path)"
-[[ -x "$BIN_DIR/$APP_NAME" ]] || die "built binary not found at $BIN_DIR/$APP_NAME"
+for binary in "$APP_EXECUTABLE" "$CLI_NAME"; do
+  [[ -x "$BIN_DIR/$binary" ]] || die "built binary not found at $BIN_DIR/$binary"
+done
 
 APP="$ROOT/build/$APP_NAME.app"
 PLIST="$APP/Contents/Info.plist"
 log "Assembling $APP"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BIN_DIR/$APP_NAME" "$APP/Contents/MacOS/$APP_NAME"
+cp "$BIN_DIR/$APP_EXECUTABLE" "$APP/Contents/MacOS/$APP_EXECUTABLE"
+cp "$BIN_DIR/$CLI_NAME" "$APP/Contents/MacOS/$CLI_NAME"
 cp "$ROOT/Packaging/Info.plist" "$PLIST"
 plutil -replace CFBundleShortVersionString -string "$VERSION" "$PLIST"
 plutil -replace CFBundleVersion -string "$VERSION" "$PLIST"
 plutil -replace LSMinimumSystemVersion -string "$MIN_MACOS" "$PLIST"
 plutil -replace CFBundleIdentifier -string "$BUNDLE_ID" "$PLIST"
+plutil -replace CFBundleExecutable -string "$APP_EXECUTABLE" "$PLIST"
 plutil -lint "$PLIST" >/dev/null
 cp "$ROOT/Packaging/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
@@ -43,6 +48,8 @@ xattr -cr "$APP" 2>/dev/null || true
 
 if [[ $DEV_SIGN -eq 1 ]]; then
   log "Ad-hoc signing (dev)"
+  # Nested code first: the app's signature seals the CLI's.
+  codesign --force --options runtime --sign - "$APP/Contents/MacOS/$CLI_NAME"
   codesign --force --options runtime --sign - "$APP"
 fi
 

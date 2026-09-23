@@ -90,5 +90,14 @@ struct DyingDetector: ServerDetector {
         let json = String(decoding: try ServerReport.encoder().encode(reports), as: UTF8.self)
         #expect(json.contains("\"orphaned\" : true"))
         #expect(!json.contains("argv"))
+
+        // Every key is present even when unknown.
+        let httpServer = try #require(try await query.reports(.init(port: 8000), now: SampleServers.referenceDate).first)
+        let object = try #require(try JSONSerialization.jsonObject(with: ServerReport.encoder().encode(httpServer)) as? [String: Any])
+        #expect(object.keys.sorted() == [
+            "agent", "framework", "git", "hidden", "http", "pid", "port", "process",
+            "project", "startedAt", "stoppable", "uptimeSeconds", "url",
+        ])
+        #expect(object["git"] is NSNull)
     }
 }

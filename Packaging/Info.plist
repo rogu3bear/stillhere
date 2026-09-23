@@ -7,7 +7,7 @@
 	<key>CFBundleDisplayName</key>
 	<string>term-web</string>
 	<key>CFBundleExecutable</key>
-	<string>term-web</string>
+	<string>TermWeb</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>

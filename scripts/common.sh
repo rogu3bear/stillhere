@@ -1,8 +1,11 @@
 # Shared settings for the build scripts. Source it; do not run it.
-# Sets ROOT, VERSION, MIN_MACOS, BUNDLE_ID, APP_NAME and the log helpers.
+# Sets ROOT, VERSION, MIN_MACOS, BUNDLE_ID, APP_NAME, APP_EXECUTABLE, CLI_NAME and the log helpers.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="term-web"
+# The menu bar app's binary (CFBundleExecutable) and the CLI shipped next to it.
+APP_EXECUTABLE="TermWeb"
+CLI_NAME="term-web"
 BUNDLE_ID="com.mlnavigator.term-web"
 PKG_ID="com.mlnavigator.term-web.pkg"
 TEAM_ID="4JB58L7BTZ"

@@ -44,10 +44,10 @@ public struct ServerStopper: Sendable {
 
     public func stop(_ entry: ServerEntry, force: Bool) async -> Result {
         guard entry.isStoppable else {
-            return .notStoppable("\(entry.processName) (PID \(entry.rootPID)) is a system, daemon or app-helper process; not stopped")
+            return .notStoppable("system, daemon or app-helper process; not stopped")
         }
         guard let target = SignalTarget(entry) else {
-            return .notStoppable("start time of PID \(entry.rootPID) is unknown, so it can't be verified; not stopped")
+            return .notStoppable("start time unknown, so the process can't be verified; not stopped")
         }
         if let failure = Self.failure(signaller.terminate(target), pid: target.pid) { return failure }
         if await waitForExit(target, port: entry.port) { return .stopped(killed: false) }

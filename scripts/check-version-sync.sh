@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Fails if the minimum macOS differs between Package.swift, common.sh,
-# Packaging/Info.plist and Packaging/distribution.xml.
+# Packaging/Info.plist and Packaging/distribution.xml, or if the CLI's
+# TermWebVersion.current differs from VERSION.
 set -euo pipefail
 source "$(dirname "$0")/common.sh"
 
@@ -20,5 +21,8 @@ grep -q 'os-version min="@MIN_MACOS@"' "$ROOT/Packaging/distribution.xml" \
 grep -q 'hostArchitectures="arm64"' "$ROOT/Packaging/distribution.xml" \
   || { warn "Packaging/distribution.xml must require hostArchitectures=\"arm64\""; status=1; }
 
-[[ $status -eq 0 ]] || die "minimum macOS settings are out of sync"
+grep -q "current = \"$VERSION\"" "$ROOT/Sources/TermWebCore/Support/TermWebVersion.swift" \
+  || { warn "TermWebVersion.current does not match VERSION ($VERSION)"; status=1; }
+
+[[ $status -eq 0 ]] || die "version settings are out of sync"
 log "Version sync OK (VERSION $VERSION, macOS $MIN_MACOS)"

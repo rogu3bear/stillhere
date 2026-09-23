@@ -18,6 +18,14 @@ public struct GitContext: Sendable, Hashable, Codable {
         self.worktree = worktree
     }
 
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(checkoutRoot, forKey: .checkoutRoot)
+        try container.encode(branch, forKey: .branch)
+        try container.encode(detachedCommit, forKey: .detachedCommit)
+        try container.encode(worktree, forKey: .worktree)
+    }
+
     /// "main", "feat/x", or "detached 1a2b3c4".
     public var headDescription: String {
         if let branch { return branch }

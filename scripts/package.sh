@@ -43,6 +43,8 @@ fi
 
 # 2. Sign the app: hardened runtime, secure timestamp, no entitlements, no --deep.
 log "Signing app with Developer ID Application"
+# Nested code first: the app's signature seals the CLI's.
+codesign --force --options runtime --timestamp --sign "$APP_SIGN_ID" "$APP/Contents/MacOS/$CLI_NAME"
 codesign --force --options runtime --timestamp --sign "$APP_SIGN_ID" "$APP"
 codesign --verify --deep --strict --verbose=2 "$APP"
 SIGN_INFO="$(codesign -dvv "$APP" 2>&1)"
@@ -109,8 +111,10 @@ pkgutil --check-signature "$PKG"
 # Capture first: `pkgutil | grep -q` can SIGPIPE pkgutil and fail under pipefail.
 PAYLOAD="$(pkgutil --payload-files "$PKG")"
 grep -qx "./$APP_NAME.app" <<<"$PAYLOAD" || die "payload lacks ./$APP_NAME.app"
-grep -qx "./$APP_NAME.app/Contents/MacOS/$APP_NAME" <<<"$PAYLOAD" \
-  || die "payload lacks ./$APP_NAME.app/Contents/MacOS/$APP_NAME"
+for binary in "$APP_EXECUTABLE" "$CLI_NAME"; do
+  grep -qx "./$APP_NAME.app/Contents/MacOS/$binary" <<<"$PAYLOAD" \
+    || die "payload lacks ./$APP_NAME.app/Contents/MacOS/$binary"
+done
 if grep -q '/\._' <<<"$PAYLOAD"; then
   grep '/\._' <<<"$PAYLOAD" >&2
   die "AppleDouble ._ entries are in the payload"
