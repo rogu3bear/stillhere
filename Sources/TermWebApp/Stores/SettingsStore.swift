@@ -11,6 +11,7 @@ final class SettingsStore {
         static let refreshInterval = "refreshInterval"
         static let showHiddenServers = "showHiddenServers"
         static let probeHTTP = "probeHTTP"
+        static let terminalBundleID = "terminalBundleID"
         static let hideSystemExecutables = "ignore.hideSystemExecutables"
         static let hideRootCwdDaemons = "ignore.hideRootCwdDaemons"
         static let hideAppHelpers = "ignore.hideAppHelpers"
@@ -33,6 +34,10 @@ final class SettingsStore {
     }
     var probeHTTP: Bool {
         didSet { defaults.set(probeHTTP, forKey: Key.probeHTTP) }
+    }
+    /// nil means Automatic (see `TerminalApp.resolve`).
+    var terminalBundleID: String? {
+        didSet { defaults.set(terminalBundleID, forKey: Key.terminalBundleID) }
     }
     var hideSystemExecutables: Bool {
         didSet { defaults.set(hideSystemExecutables, forKey: Key.hideSystemExecutables) }
@@ -57,6 +62,7 @@ final class SettingsStore {
             ?? Self.defaultRefreshInterval
         showHiddenServers = defaults.object(forKey: Key.showHiddenServers) as? Bool ?? false
         probeHTTP = defaults.object(forKey: Key.probeHTTP) as? Bool ?? true
+        terminalBundleID = defaults.string(forKey: Key.terminalBundleID)
         let base = IgnoreConfiguration.defaults
         hideSystemExecutables = defaults.object(forKey: Key.hideSystemExecutables) as? Bool ?? base.hideSystemExecutables
         hideRootCwdDaemons = defaults.object(forKey: Key.hideRootCwdDaemons) as? Bool ?? base.hideRootCwdDaemons
@@ -65,6 +71,8 @@ final class SettingsStore {
         ports = defaults.array(forKey: Key.ports) as? [Int] ?? base.ports
         defaults.set(Self.schemaVersion, forKey: Key.schemaVersion)
     }
+
+    var terminal: TerminalApp { TerminalApp.resolve(preferred: terminalBundleID) }
 
     /// The rules the detector classifies with.
     var ignoreConfiguration: IgnoreConfiguration {

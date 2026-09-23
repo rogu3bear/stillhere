@@ -7,7 +7,7 @@ protocol ServerActions: Sendable {
     func open(_ url: URL)
     func copy(_ url: URL)
     func reveal(_ folder: URL)
-    func openInTerminal(_ folder: URL)
+    func openInTerminal(_ folder: URL, using terminal: TerminalApp)
 }
 
 /// Does nothing: for previews.
@@ -15,7 +15,7 @@ struct InertServerActions: ServerActions {
     func open(_ url: URL) {}
     func copy(_ url: URL) {}
     func reveal(_ folder: URL) {}
-    func openInTerminal(_ folder: URL) {}
+    func openInTerminal(_ folder: URL, using terminal: TerminalApp) {}
 }
 
 extension EnvironmentValues {

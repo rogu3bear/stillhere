@@ -6,6 +6,7 @@ struct ServerRowActions: View {
     let entry: ServerEntry
 
     @Environment(ServerListModel.self) private var model
+    @Environment(SettingsStore.self) private var settings
     @Environment(\.serverActions) private var actions
     @State private var copied = false
 
@@ -27,9 +28,11 @@ struct ServerRowActions: View {
             Button("Finder", systemImage: "folder") { folder.map(actions.reveal) }
                 .disabled(folder == nil)
                 .help("Reveal the project folder in Finder")
-            Button("Terminal", systemImage: "terminal") { folder.map(actions.openInTerminal) }
-                .disabled(folder == nil)
-                .help("Open the project folder in Terminal")
+            Button("Terminal", systemImage: "terminal") {
+                folder.map { actions.openInTerminal($0, using: settings.terminal) }
+            }
+            .disabled(folder == nil)
+            .help("Open the project folder in \(settings.terminal.name)")
             Spacer(minLength: 0)
             Button("Stop", systemImage: "stop.circle", role: .destructive) {
                 model.stopFlow.requestStop(entry)

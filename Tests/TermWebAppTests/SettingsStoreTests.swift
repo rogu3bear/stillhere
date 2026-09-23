@@ -80,6 +80,19 @@ import TermWebCore
         #expect(controller.errorMessage != nil)
         #expect(controller.isOn)
     }
+
+    @Test func terminalChoicePersistsAndFallsBackWhenUninstalled() {
+        let settings = SettingsStore(defaults: temp.defaults)
+        #expect(settings.terminalBundleID == nil)
+        #expect(settings.terminal == TerminalApp.resolve(preferred: nil))
+
+        settings.terminalBundleID = TerminalApp.appleTerminal.bundleID
+        #expect(SettingsStore(defaults: temp.defaults).terminal == .appleTerminal)
+
+        settings.terminalBundleID = "com.example.not-installed"
+        #expect(settings.terminal == TerminalApp.resolve(preferred: nil))
+        #expect(TerminalApp.installed.contains(.appleTerminal))
+    }
 }
 
 final class RecordingLoginItem: LoginItemService {

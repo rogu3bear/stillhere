@@ -3,7 +3,6 @@ import AppKit
 /// NSWorkspace / NSPasteboard implementation. No Apple Events, so no automation
 /// permission or entitlement is needed.
 struct LiveServerActions: ServerActions {
-    static let terminalBundleID = "com.apple.Terminal"
     static let terminalFallback = URL(fileURLWithPath: "/System/Applications/Utilities/Terminal.app")
 
     func open(_ url: URL) {
@@ -20,10 +19,9 @@ struct LiveServerActions: ServerActions {
         NSWorkspace.shared.activateFileViewerSelecting([folder])
     }
 
-    /// Opens a new Terminal window at `folder`.
-    func openInTerminal(_ folder: URL) {
-        let terminal = NSWorkspace.shared.urlForApplication(withBundleIdentifier: Self.terminalBundleID)
-            ?? Self.terminalFallback
+    /// Opens a new window of `terminal` at `folder`.
+    func openInTerminal(_ folder: URL, using terminal: TerminalApp) {
+        let terminal = terminal.applicationURL ?? Self.terminalFallback
         NSWorkspace.shared.open([folder], withApplicationAt: terminal, configuration: NSWorkspace.OpenConfiguration())
     }
 }
