@@ -11,6 +11,7 @@ enum TermWebCLI {
       term-web open <port>  open a server in the default browser
       term-web stop <port>  stop a server (SIGTERM; asks first)
       term-web wait <port>  wait until a server answers HTTP, print its URL
+      term-web mcp          run as an MCP server on stdio (for coding agents)
       term-web help <command>
 
     \(ListCommand.usage)
@@ -33,6 +34,10 @@ enum TermWebCLI {
             case "open": return try await OpenCommand(rest, output: output).run()
             case "stop": return try await StopCommand(rest, output: output).run()
             case "wait": return try await WaitCommand(rest, output: output).run()
+            case "mcp":
+                guard rest.isEmpty else { throw Arguments.UsageError(description: "mcp takes no arguments") }
+                await MCPServer().serve()
+                return 0
             case "help", "-h", "--help":
                 output.line(help(for: rest.first))
                 return 0
