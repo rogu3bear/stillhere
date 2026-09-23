@@ -78,7 +78,9 @@ struct ServerRowDetails: View {
         }
         var parts: [String] = []
         if let status = probe.status {
-            parts.append("\(status) \(HTTPURLResponse.localizedString(forStatusCode: status).capitalized)")
+            // Foundation calls 200 "no error"; show the conventional reason phrase instead.
+            let phrase = status == 200 ? "OK" : HTTPURLResponse.localizedString(forStatusCode: status).capitalized
+            parts.append("\(status) \(phrase)")
         }
         if let location = probe.location { parts.append("→ \(location)") }
         if let server = probe.serverHeader ?? probe.poweredBy { parts.append(server) }

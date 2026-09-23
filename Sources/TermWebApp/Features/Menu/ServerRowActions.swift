@@ -14,7 +14,7 @@ struct ServerRowActions: View {
         HStack(spacing: 6) {
             Button("Open", systemImage: "safari") { actions.open(entry.displayURL) }
                 .help("Open in the default browser")
-            Button(copied ? "Copied" : "Copy URL", systemImage: copied ? "checkmark" : "doc.on.doc") {
+            Button(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc") {
                 actions.copy(entry.displayURL)
                 copied = true
             }
@@ -35,11 +35,13 @@ struct ServerRowActions: View {
                 model.stopFlow.requestStop(entry)
             }
             .disabled(!entry.isStoppable || model.stopFlow.phase(for: entry) != nil)
+            .labelStyle(.titleAndIcon)
             .help(entry.isStoppable
                   ? "Stop this server (SIGTERM, after confirmation)"
                   : "System, daemon and app-helper processes can't be stopped from here")
         }
-        .labelStyle(.titleAndIcon)
+        // Titles only for the utility buttons so all five fit the 400 pt panel untruncated.
+        .labelStyle(.titleOnly)
         .buttonStyle(.bordered)
         .controlSize(.small)
     }
