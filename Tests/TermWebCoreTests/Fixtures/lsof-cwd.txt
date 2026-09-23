@@ -1,0 +1,9 @@
+p70001
+fcwd
+n/Users/dev/Projects/shop
+p70030
+fcwd
+n/Users/dev/Downloads/site
+p70050
+fcwd
+n/

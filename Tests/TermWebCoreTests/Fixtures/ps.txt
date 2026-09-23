@@ -1,0 +1,5 @@
+70001 69990    12:34 /usr/local/bin/node /Users/dev/Projects/shop/node_modules/.bin/vite
+70030 69990 01:02:03 /opt/homebrew/bin/python3 -m http.server 8765 --bind 127.0.0.1
+70050     1 3-04:05:06 /opt/homebrew/opt/postgresql@17/bin/postgres -D /opt/homebrew/var/postgresql@17
+garbage line
+70060 1 notatime /bin/foo
