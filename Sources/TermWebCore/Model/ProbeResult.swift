@@ -9,6 +9,8 @@ public struct ProbeResult: Sendable, Hashable {
     }
 
     public var host: String
+    /// "http" or "https": the scheme that produced this result.
+    public var scheme: String
     public var status: Int?
     public var title: String?
     public var location: String?
@@ -19,6 +21,7 @@ public struct ProbeResult: Sendable, Hashable {
 
     public init(
         host: String,
+        scheme: String = "http",
         status: Int? = nil,
         title: String? = nil,
         location: String? = nil,
@@ -28,6 +31,7 @@ public struct ProbeResult: Sendable, Hashable {
         failure: Failure? = nil
     ) {
         self.host = host
+        self.scheme = scheme
         self.status = status
         self.title = title
         self.location = location

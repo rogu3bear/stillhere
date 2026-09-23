@@ -23,12 +23,12 @@ struct ServerRow: View {
                     .accessibilityHint(isExpanded ? "Hides details" : "Shows details and actions")
                     .accessibilityAction { toggle() }
                 Button {
-                    actions.open(entry.displayURL)
+                    actions.open(model.url(for: entry))
                 } label: {
                     Image(systemName: "arrow.up.forward.square")
                 }
                 .buttonStyle(.borderless)
-                .help("Open \(entry.displayURL.absoluteString)")
+                .help("Open \(model.url(for: entry).absoluteString)")
                 .accessibilityLabel("Open in browser")
             }
             if let phase = model.stopFlow.phase(for: entry) {

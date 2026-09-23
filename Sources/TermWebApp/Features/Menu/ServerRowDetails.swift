@@ -9,7 +9,7 @@ struct ServerRowDetails: View {
     var body: some View {
         Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 10, verticalSpacing: 4) {
             row("URL") {
-                Text(entry.displayURL.absoluteString).textSelection(.enabled)
+                Text(entry.url(for: probe).absoluteString).textSelection(.enabled)
             }
             row("Process") {
                 Text(processText).textSelection(.enabled)

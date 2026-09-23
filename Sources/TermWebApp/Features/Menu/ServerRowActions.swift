@@ -12,13 +12,13 @@ struct ServerRowActions: View {
     var body: some View {
         let folder = entry.project?.projectRoot
         HStack(spacing: 6) {
-            Button("Open", systemImage: "safari") { actions.open(entry.displayURL) }
+            Button("Open", systemImage: "safari") { actions.open(model.url(for: entry)) }
                 .help("Open in the default browser")
             Button(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc") {
-                actions.copy(entry.displayURL)
+                actions.copy(model.url(for: entry))
                 copied = true
             }
-            .help("Copy \(entry.displayURL.absoluteString)")
+            .help("Copy \(model.url(for: entry).absoluteString)")
             .task(id: copied) {
                 guard copied else { return }
                 try? await Task.sleep(for: .seconds(1.5))

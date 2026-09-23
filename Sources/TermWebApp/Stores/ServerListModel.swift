@@ -68,6 +68,9 @@ final class ServerListModel {
         probe(for: entry).map { FrameworkDetector.refine(entry.framework, with: $0) } ?? entry.framework
     }
 
+    /// The URL to show, copy and open: HTTPS once a probe found a TLS-only server.
+    func url(for entry: ServerEntry) -> URL { entry.url(for: probe(for: entry)) }
+
     func now() -> Date { clock.now }
 
     // MARK: Polling

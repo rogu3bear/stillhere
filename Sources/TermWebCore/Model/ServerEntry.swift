@@ -52,8 +52,14 @@ public struct ServerEntry: Sendable, Hashable, Identifiable {
     /// False for system, daemon and app-helper listeners: the app never offers to stop those.
     public var isStoppable: Bool { hiddenReason?.isProtected != true }
 
-    /// The URL shown, copied and opened. `localhost` resolves both families.
-    public var displayURL: URL { URL(string: "http://localhost:\(port)/")! }
+    /// The URL shown, copied and opened, before a probe has told us the scheme.
+    /// `localhost` resolves both families.
+    public var displayURL: URL { url(scheme: "http") }
+
+    public func url(scheme: String) -> URL { URL(string: "\(scheme)://localhost:\(port)/")! }
+
+    /// The URL to show once a probe is known: HTTPS when the server only speaks TLS.
+    public func url(for probe: ProbeResult?) -> URL { url(scheme: probe?.scheme ?? "http") }
 
     public var processName: String { process?.name ?? command }
 
