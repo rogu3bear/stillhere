@@ -1,20 +1,37 @@
 # term-web
 
-A macOS menu bar app that finds the dev servers running on your Mac and lists
-them in one dropdown. The menu bar icon shows how many are running.
+term-web finds the dev servers running on your Mac and traces each one to its
+project, git branch and the coding agent session that started it. You get it
+three ways, all answering from the same detector:
+
+- a **menu bar app** with one dropdown for every server (the icon shows how many
+  are running, the header how many are orphaned)
+- a **`term-web` command** for your terminal and scripts
+- an **MCP server** (`term-web mcp`) so Claude Code, Codex and other agents can
+  wait for, list and clean up the servers they start
+
+Coding agents start dev servers all day, often in worktrees, and leave them
+running when their session ends. term-web names the agent behind each server
+and flags the **orphans**: servers whose launching session has ended, so
+nothing will stop them for you.
 
 Each row shows:
 
-- the port and URL (`http://localhost:<port>/`)
+- the port and URL (`http://localhost:<port>/`, or `https://` for TLS-only dev
+  servers)
 - the process name and PID
 - the project folder (the process's working directory; hover for the full path)
+- the git branch, and the worktree name for linked worktrees
+- the coding agent that started it (Claude Code, Codex, …), in orange once
+  orphaned
 - a framework guess (Vite, Next.js, Astro, Remix, Rails, Django, Flask,
   FastAPI/uvicorn, Bun, Node, Python `http.server` and more)
 - uptime
 - HTTP status and page title, from a quick GET to the loopback address
 
 Row actions: **Open** in the default browser, **Copy URL**, **Reveal** the
-project in Finder, open the project folder in **Terminal**, and **Stop**. Stop
+project in Finder, open the project folder in your **Terminal** app (iTerm2,
+Ghostty, Warp or Terminal; see Settings), and **Stop**. Stop
 asks for confirmation and sends SIGTERM. If that same process is still running
 about 3 seconds later, it offers SIGKILL for it; if it exited and something else
 now holds the port, nothing more is offered. Each signal goes to one process
@@ -35,16 +52,91 @@ processes sharing a port get separate entries.
 ## Install
 
 Open `term-web-<version>.pkg` and follow the installer. It installs
-`/Applications/term-web.app`. Then open term-web from Applications. It runs in
+`/Applications/term-web.app` and links the command-line tool at
+`/usr/local/bin/term-web`. Then open term-web from Applications. It runs in
 the menu bar only, with no Dock icon. Use **Quit** in the dropdown to exit.
 
 Until the package is notarized, Gatekeeper blocks it by default. See
 [Notarization](#notarization).
 
+## Command line
+
+```sh
+term-web                      # table of running dev servers (same as `term-web list`)
+term-web list --json          # stable JSON: every key present, null when unknown
+term-web list --mine          # servers started by the Claude Code session running this
+term-web list --orphans       # servers whose launching agent session has ended
+term-web wait 5173            # block until :5173 answers HTTP, print its URL (exit 1 on timeout)
+term-web open 5173            # open in the default browser (https when TLS-only)
+term-web stop 5173            # SIGTERM after confirming; --yes without a terminal, --force for SIGKILL
+term-web stop --orphans --yes # clean up every orphaned server
+```
+
+`list --all` includes hidden listeners and `--no-probe` skips the HTTP check.
+`stop` uses the same safety rules as the menu: one verified process, never
+system, daemon or app-helper processes, and SIGKILL only on `--force` and only
+to the same process. Exit codes: 0 success, 1 failure or timeout, 2 usage error.
+
+## Coding agents (MCP)
+
+`term-web mcp` is an MCP server on stdio. Add it to Claude Code:
+
+```sh
+claude mcp add term-web -- term-web mcp
+```
+
+or to Codex (`~/.codex/config.toml`):
+
+```toml
+[mcp_servers.term-web]
+command = "term-web"
+args = ["mcp"]
+```
+
+Tools:
+
+- `list_servers` (`mine`, `orphans_only`, `include_hidden`, `port`)
+- `wait_for_server` (`port`, `timeout_seconds` up to 120, `require_http`):
+  use this after starting a dev server instead of sleeping
+- `stop_server` (`port`, `pid`, `force`, `any_owner`): by default an agent can
+  stop only the servers **its own session** started, so it can't stop your
+  servers or another agent's unless it passes `any_owner` (after asking you)
+
+The server speaks both MCP eras: the stateless 2026-07-28 revision
+(per-request `_meta`, `server/discover`) and the `initialize` handshake of
+2024-11-05 through 2025-11-25.
+
+## How agent tracing works
+
+Coding agents mark the processes they start with environment variables, and a
+dev server inherits them. term-web reads **only** these variables from other
+processes, and skips every other variable byte by byte without decoding it:
+
+| Variable | Set by | Used for |
+| --- | --- | --- |
+| `CLAUDECODE`, `CLAUDE_CODE_SESSION_ID`, `CLAUDE_PID` | Claude Code | agent, session, launcher liveness |
+| `CODEX_SANDBOX` | Codex (sandboxed commands) | agent |
+| `AI_AGENT` | agents that follow this convention | agent name |
+
+When no marker is present, a live ancestor process named `claude`, `codex`,
+`cursor-agent`, `gemini`, `aider`, `opencode` or `amp` identifies the agent.
+
+A server is **orphaned** only when its launcher PID is known (Claude Code's
+`CLAUDE_PID`) and that process has exited, or the PID now belongs to a process
+started after the server. Agents that don't expose a launcher PID are named but
+never called orphaned: term-web does not guess.
+
+The git branch and worktree come from reading `.git/HEAD` (or a worktree's
+`.git` file) directly. No `git` process is run.
+
 ## Privacy
 
-- term-web makes no network connections except HTTP requests to `127.0.0.1`
-  and `::1` on the ports it found. There is no telemetry.
+- term-web makes no network connections except HTTP(S) requests to `127.0.0.1`
+  and `::1` on the ports it found. There is no telemetry. For HTTPS it accepts
+  self-signed certificates, only for those loopback addresses.
+- From other processes' environments it reads only the agent markers listed
+  above. Command lines and environments never appear in `--json` or MCP output,
+  because they can carry tokens.
 - It has no entitlements and asks for no special permissions. It runs with the
   hardened runtime.
 - It only sees processes that belong to you. Listeners owned by root or other
@@ -106,6 +198,8 @@ entries in their own section, each labelled with the reason it was hidden.
 - **Refresh every:** 2, 3, 5 (default), 10 or 30 seconds
 - **Show hidden servers**
 - **Check HTTP status and page title**
+- **Open folders in:** Automatic (the first installed of iTerm2, Ghostty and
+  Warp, else Terminal) or a specific installed terminal
 - **Launch at login:** uses `SMAppService`. Register it only from
   `/Applications/term-web.app`. A copy run from `build/` registers that path
   instead. If macOS needs approval, the Settings window links to Login Items.
@@ -117,19 +211,24 @@ Requires Xcode 26 or later (Swift 6.2 or later).
 ```sh
 swift build                  # debug build
 swift test                   # unit tests (fake lsof output, no live processes)
+swift run term-web           # the CLI, from source
 scripts/bundle.sh --dev      # build/term-web.app, ad-hoc signed for local runs
 open build/term-web.app
 ```
 
 The project uses Swift Package Manager only. There is no Xcode project, because
-SwiftPM builds the executable and the scripts assemble the `.app` bundle.
+SwiftPM builds the executables and the scripts assemble the `.app` bundle.
+Targets: `TermWebCore` (detection, provenance, reports; no UI), `TermWebApp`
+(the menu bar app, binary `TermWeb`) and `TermWebCLI` (the `term-web` command
+and MCP server). The bundle carries both binaries in `Contents/MacOS`.
 
-The version lives only in `VERSION`. `bundle.sh` stamps it into the app's
-`Info.plist`, and `package.sh` uses it for the package version and file name.
+The version lives in `VERSION`. `bundle.sh` stamps it into the app's
+`Info.plist`, `package.sh` uses it for the package version and file name, and
+`TermWebVersion.current` (what `term-web version` prints) must match it.
 The minimum macOS (26.0) is set in `Package.swift`, `scripts/common.sh`,
 `Packaging/Info.plist` and `Packaging/distribution.xml`.
 `scripts/check-version-sync.sh` runs as part of every bundle build and fails if
-those differ.
+any of these differ.
 
 `scripts/make-icon.sh` regenerates `Packaging/AppIcon.icns` from
 `scripts/make-icon.swift`. The generated icon is committed.
@@ -142,18 +241,19 @@ scripts/package.sh [--force] [--notary-profile NAME]
 
 This script:
 
-1. builds a release arm64 binary and bundles `build/term-web.app`
-2. signs it with Developer ID Application, using the hardened runtime and a
-   secure timestamp, with no entitlements
-3. builds a component package that installs to `/Applications`
+1. builds the release arm64 app and CLI and bundles `build/term-web.app`
+2. signs the CLI, then the app, with Developer ID Application, using the
+   hardened runtime and a secure timestamp, with no entitlements
+3. builds a component package that installs to `/Applications`, and a second
+   one that links `/usr/local/bin/term-web` to the CLI inside the app
 4. builds a product archive from `Packaging/distribution.xml` (title, arm64
    host requirement, minimum macOS 26.0) and signs it with Developer ID
    Installer
 5. writes `dist/term-web-<VERSION>.pkg` and a `.sha256` file next to it
 6. runs checks: `codesign --verify --deep --strict` on the app and on a copy
-   extracted from the package, `pkgutil --check-signature`, a check that the
-   payload contains `./term-web.app/Contents/MacOS/term-web` with install
-   location `/Applications`, and `spctl --assess`
+   extracted from the package, `pkgutil --check-signature`, checks that the
+   payload contains both binaries with install location `/Applications` and
+   the CLI link with the right target, and `spctl --assess`
 
 The script will not overwrite an existing package for the same version. Bump
 `VERSION`, delete the file, or pass `--force`.
@@ -197,6 +297,12 @@ argument enables notarization; the environment is never consulted.
   the active app when its panel closes. term-web activates itself before opening
   Settings. If the window still ends up behind others, click the term-web
   menu bar icon again or use Mission Control to bring it forward.
+- **`term-web: command not found`.** The installer links
+  `/usr/local/bin/term-web`; make sure `/usr/local/bin` is on your `PATH`, or
+  run `/Applications/term-web.app/Contents/MacOS/term-web`.
+- **A server shows no agent.** Only servers started while an agent's markers
+  were in the environment, or whose agent process is still an ancestor, can be
+  attributed. Servers started from your own shell correctly show none.
 - **A server is missing.** Turn on **Show hidden servers** to see whether it
   was hidden and why, then edit the ignore list. Servers run by root or another
   user cannot be seen.
