@@ -8,6 +8,9 @@ APP_EXECUTABLE="TermWeb"
 CLI_NAME="term-web"
 BUNDLE_ID="com.mlnavigator.term-web"
 PKG_ID="com.mlnavigator.term-web.pkg"
+# Second component: /usr/local/bin/term-web, a symlink to the CLI inside the app.
+CLI_PKG_ID="com.mlnavigator.term-web.cli.pkg"
+CLI_LINK="/usr/local/bin/term-web"
 TEAM_ID="4JB58L7BTZ"
 # Keep in sync with Package.swift (.macOS(.v26)); check-version-sync.sh enforces it.
 MIN_MACOS="26.0"

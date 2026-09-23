@@ -97,6 +97,21 @@ if grep -q '/\._' <<<"$COMPONENT_FILES"; then
   strip_appledouble "$COMPONENT"
 fi
 
+# 3b. Component that links the CLI onto PATH. A symlink, not a copy: the binary stays
+# sealed inside the signed app and updates with it.
+log "Building CLI link component"
+CLI_COMPONENT="$ROOT/build/$APP_NAME-cli-component.pkg"
+CLI_STAGE="$ROOT/build/cliroot"
+rm -rf "$CLI_STAGE" "$CLI_COMPONENT"
+mkdir -p "$CLI_STAGE$(dirname "$CLI_LINK")"
+ln -s "/Applications/$APP_NAME.app/Contents/MacOS/$CLI_NAME" "$CLI_STAGE$CLI_LINK"
+pkgbuild --root "$CLI_STAGE" --identifier "$CLI_PKG_ID" --version "$VERSION" \
+  --install-location / "$CLI_COMPONENT"
+CLI_FILES="$(pkgutil --payload-files "$CLI_COMPONENT")"
+if grep -q '/\._' <<<"$CLI_FILES"; then
+  strip_appledouble "$CLI_COMPONENT"
+fi
+
 # 4. Product archive with the distribution file, signed with Developer ID Installer.
 log "Building signed product archive"
 sed -e "s/@VERSION@/$VERSION/g" -e "s/@MIN_MACOS@/$MIN_MACOS/g" \
@@ -109,7 +124,8 @@ productbuild --distribution "$ROOT/build/distribution.xml" --package-path "$ROOT
 log "Verifying package"
 pkgutil --check-signature "$PKG"
 # Capture first: `pkgutil | grep -q` can SIGPIPE pkgutil and fail under pipefail.
-PAYLOAD="$(pkgutil --payload-files "$PKG")"
+PAYLOAD="$(pkgutil --payload-files "$COMPONENT"; pkgutil --payload-files "$CLI_COMPONENT")"
+grep -qx ".$CLI_LINK" <<<"$PAYLOAD" || die "payload lacks .$CLI_LINK"
 grep -qx "./$APP_NAME.app" <<<"$PAYLOAD" || die "payload lacks ./$APP_NAME.app"
 for binary in "$APP_EXECUTABLE" "$CLI_NAME"; do
   grep -qx "./$APP_NAME.app/Contents/MacOS/$binary" <<<"$PAYLOAD" \
@@ -127,6 +143,10 @@ grep -q 'hostArchitectures="arm64"' "$ROOT/build/expanded/Distribution" \
   || die "distribution lacks the arm64 host requirement"
 pkgutil --expand-full "$PKG" "$ROOT/build/full"
 codesign --verify --deep --strict --verbose=2 "$ROOT/build/full/$APP_NAME-component.pkg/Payload/$APP_NAME.app"
+LINK_TARGET="$(readlink "$ROOT/build/full/$APP_NAME-cli-component.pkg/Payload$CLI_LINK")"
+[[ "$LINK_TARGET" == "/Applications/$APP_NAME.app/Contents/MacOS/$CLI_NAME" ]] \
+  || die "CLI link points at '$LINK_TARGET'"
+log "Payload links $CLI_LINK -> $LINK_TARGET"
 log "Payload installs to /Applications/$APP_NAME.app"
 
 set +e

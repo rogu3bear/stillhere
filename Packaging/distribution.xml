@@ -11,11 +11,16 @@
     <choices-outline>
         <line choice="default">
             <line choice="com.mlnavigator.term-web.pkg"/>
+            <line choice="com.mlnavigator.term-web.cli.pkg"/>
         </line>
     </choices-outline>
     <choice id="default"/>
     <choice id="com.mlnavigator.term-web.pkg" visible="false">
         <pkg-ref id="com.mlnavigator.term-web.pkg"/>
     </choice>
+    <choice id="com.mlnavigator.term-web.cli.pkg" visible="false">
+        <pkg-ref id="com.mlnavigator.term-web.cli.pkg"/>
+    </choice>
     <pkg-ref id="com.mlnavigator.term-web.pkg" version="@VERSION@" onConclusion="none">term-web-component.pkg</pkg-ref>
+    <pkg-ref id="com.mlnavigator.term-web.cli.pkg" version="@VERSION@" onConclusion="none">term-web-cli-component.pkg</pkg-ref>
 </installer-gui-script>
