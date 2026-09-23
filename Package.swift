@@ -21,5 +21,10 @@ let package = Package(
             dependencies: ["TermWebCore"],
             resources: [.copy("Fixtures")]
         ),
+        .testTarget(
+            name: "TermWebAppTests",
+            dependencies: ["TermWebApp", "TermWebCore"],
+            swiftSettings: [.defaultIsolation(MainActor.self)]
+        ),
     ]
 )
