@@ -84,14 +84,15 @@ import TermWebCore
     @Test func terminalChoicePersistsAndFallsBackWhenUninstalled() {
         let settings = SettingsStore(defaults: temp.defaults)
         #expect(settings.terminalBundleID == nil)
-        #expect(settings.terminal == TerminalApp.resolve(preferred: nil))
+        #expect(settings.terminal == settings.automaticTerminal)
 
         settings.terminalBundleID = TerminalApp.appleTerminal.bundleID
         #expect(SettingsStore(defaults: temp.defaults).terminal == .appleTerminal)
 
         settings.terminalBundleID = "com.example.not-installed"
-        #expect(settings.terminal == TerminalApp.resolve(preferred: nil))
-        #expect(TerminalApp.installed.contains(.appleTerminal))
+        #expect(settings.terminal == settings.automaticTerminal)
+        #expect(settings.installedTerminals.contains(.appleTerminal))
+        #expect(TerminalApp.resolve(preferred: "x", among: []) == .appleTerminal)
     }
 }
 

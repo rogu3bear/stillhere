@@ -51,7 +51,11 @@ public struct ServerStopper: Sendable {
         }
         if let failure = Self.failure(signaller.terminate(target), pid: target.pid) { return failure }
         if await waitForExit(target, port: entry.port) { return .stopped(killed: false) }
-        guard signaller.verify(target) == .same else { return .stopped(killed: false) }
+        switch signaller.verify(target) {
+        case .same: break
+        case .gone, .reused: return .stopped(killed: false) // it exited; the PID may be reused
+        case .denied, .refused: return .failed("PID \(target.pid) can no longer be inspected; it may still be running")
+        }
         guard force else { return .stillRunning }
         if let failure = Self.failure(signaller.forceKill(target), pid: target.pid) { return failure }
         return await waitForExit(target, port: entry.port)

@@ -22,13 +22,13 @@ struct TerminalApp: Hashable, Identifiable {
         NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)
     }
 
-    static var installed: [TerminalApp] {
+    /// Launch Services lookups: call when the list may have changed, not per view update.
+    static func findInstalled() -> [TerminalApp] {
         known.filter { $0.applicationURL != nil }
     }
 
     /// The saved choice when it is still installed, otherwise the first installed terminal.
-    static func resolve(preferred bundleID: String?) -> TerminalApp {
-        let available = installed
+    static func resolve(preferred bundleID: String?, among available: [TerminalApp]) -> TerminalApp {
         if let bundleID, let match = available.first(where: { $0.bundleID == bundleID }) {
             return match
         }

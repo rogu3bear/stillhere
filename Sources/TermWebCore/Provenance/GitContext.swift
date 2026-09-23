@@ -56,9 +56,12 @@ public enum GitReader {
                 let gitDirectory = pointer.hasPrefix("/")
                     ? pointer
                     : current.appending(path: pointer).standardized.path
-                let worktree = gitDirectory.contains("/worktrees/")
-                    ? URL(fileURLWithPath: gitDirectory).lastPathComponent
-                    : nil
+                // A linked worktree's git dir is `<common>/worktrees/<name>` and has a
+                // `commondir` file; submodules point elsewhere (`.git/modules/...`).
+                let gitDirectoryURL = URL(fileURLWithPath: gitDirectory)
+                let isLinkedWorktree = gitDirectoryURL.deletingLastPathComponent().lastPathComponent == "worktrees"
+                    && read(gitDirectory + "/commondir") != nil
+                let worktree = isLinkedWorktree ? gitDirectoryURL.lastPathComponent : nil
                 return context(checkoutRoot: path, gitDirectory: gitDirectory, worktree: worktree, read: read)
             case nil:
                 break

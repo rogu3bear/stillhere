@@ -24,8 +24,8 @@ struct GeneralSettingsTab: View {
 
             Section {
                 Picker("Open folders in", selection: $settings.terminalBundleID) {
-                    Text("Automatic (\(TerminalApp.resolve(preferred: nil).name))").tag(String?.none)
-                    ForEach(TerminalApp.installed) { terminal in
+                    Text("Automatic (\(settings.automaticTerminal.name))").tag(String?.none)
+                    ForEach(settings.installedTerminals) { terminal in
                         Text(terminal.name).tag(Optional(terminal.bundleID))
                     }
                 }
@@ -54,9 +54,14 @@ struct GeneralSettingsTab: View {
             }
         }
         .formStyle(.grouped)
-        .onAppear { launchAtLogin.refresh() }
+        .onAppear {
+            launchAtLogin.refresh()
+            settings.refreshInstalledTerminals()
+        }
         .onChange(of: appearsActive) { _, active in
-            if active { launchAtLogin.refresh() }
+            guard active else { return }
+            launchAtLogin.refresh()
+            settings.refreshInstalledTerminals()
         }
     }
 }

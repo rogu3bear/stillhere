@@ -116,6 +116,7 @@ import Testing
         var fs = FakeFS()
         fs.files["/Users/me/dev/shop-wt/.git"] = "gitdir: /Users/me/dev/shop/.git/worktrees/shop-wt\n"
         fs.files["/Users/me/dev/shop/.git/worktrees/shop-wt/HEAD"] = "ref: refs/heads/fix/login\n"
+        fs.files["/Users/me/dev/shop/.git/worktrees/shop-wt/commondir"] = "../..\n"
         let git = fs.context("/Users/me/dev/shop-wt")
         #expect(git?.worktree == "shop-wt")
         #expect(git?.branch == "fix/login")
@@ -127,6 +128,15 @@ import Testing
         fs.files["/Users/me/dev/a/wt/.git"] = "gitdir: ../.git/worktrees/wt"
         fs.files["/Users/me/dev/a/.git/worktrees/wt/HEAD"] = "ref: refs/heads/x"
         #expect(fs.context("/Users/me/dev/a/wt")?.branch == "x")
+    }
+
+    @Test func submoduleIsNotAWorktree() {
+        var fs = FakeFS()
+        fs.files["/Users/me/dev/app/vendor/lib/.git"] = "gitdir: /Users/me/dev/app/.git/modules/worktrees/lib\n"
+        fs.files["/Users/me/dev/app/.git/modules/worktrees/lib/HEAD"] = "ref: refs/heads/main\n"
+        let git = fs.context("/Users/me/dev/app/vendor/lib")
+        #expect(git?.branch == "main")
+        #expect(git?.worktree == nil)
     }
 
     @Test func detachedHead() {

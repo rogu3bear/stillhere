@@ -86,9 +86,10 @@ public actor DefaultServerDetector: ServerDetector {
     /// with a launcher PID; the launcher itself is looked up to tell alive from orphaned.
     private func agentContext(for process: ProcessDetails) async -> AgentContext? {
         let environment = process.agentEnvironment
-        let launcherPID = environment["CLAUDE_PID"].flatMap { Int32($0) }
+        // The same condition AgentDetector uses to trust a launcher PID.
+        let launcherPID = AgentDetector.fromEnvironment(environment)?.launcherPID
         var known: [Int32: ProcessDetails] = [:]
-        if let launcherPID, launcherPID > 1 {
+        if let launcherPID {
             known = await inspector.details(for: [launcherPID])
         }
         var ancestors: [ProcessDetails] = []

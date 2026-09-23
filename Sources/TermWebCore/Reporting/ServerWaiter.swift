@@ -20,14 +20,23 @@ public struct ServerWaiter: Sendable {
         self.pollInterval = pollInterval
     }
 
-    /// Hidden rows count too: the caller named the port explicitly.
+    /// Hidden rows count too: the caller named the port explicitly. The deadline is
+    /// checked before each probe, so a result can arrive at most one probe (about 2 s, or
+    /// 4 s with the HTTPS fallback) after `timeout`.
     public func wait(port: Int, timeout: Duration, requireHTTP: Bool) async -> Outcome {
         let clock = ContinuousClock()
         let start = clock.now
         var last: (ServerEntry, ProbeResult?)?
         while true {
             if let entry = try? await query.entries(.init(includeHidden: true, port: port)).first {
-                let probe = requireHTTP ? await query.probe(entry) : nil
+                let probe: ProbeResult?
+                if !requireHTTP {
+                    probe = nil
+                } else if clock.now - start >= timeout, let previous = last {
+                    probe = previous.1 // past the deadline: don't start another probe
+                } else {
+                    probe = await query.probe(entry) // includes the one check a zero timeout gets
+                }
                 last = (entry, probe)
                 // Any HTTP status means the server is up; 5xx is the app's problem, not ours.
                 if !requireHTTP || probe?.status != nil {

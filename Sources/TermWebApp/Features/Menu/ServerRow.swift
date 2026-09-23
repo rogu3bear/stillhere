@@ -87,8 +87,8 @@ struct ServerRow: View {
         let agentText = agent.isOrphaned
             ? Text("\(agent.kind.displayName) · orphaned").foregroundStyle(.orange)
             : Text(agent.kind.displayName)
-        let before = leading.isEmpty ? Text("") : Text(leading.joined(separator: " · ") + " · ")
-        return before + agentText + Text(" · " + trailing.joined(separator: " · "))
+        let before = leading.isEmpty ? "" : leading.joined(separator: " · ") + " · "
+        return Text("\(before)\(agentText) · \(trailing.joined(separator: " · "))")
     }
 
     private var agentHelp: String {

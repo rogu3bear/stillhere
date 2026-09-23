@@ -48,6 +48,19 @@ struct DyingDetector: ServerDetector {
         #expect(result == .failed("PID \(entry.rootPID) survived SIGKILL"))
     }
 
+    @Test func uninspectableSurvivorIsNotReportedStopped() async {
+        let system = FakeSignalSystem(start: start)
+        system.state.withLock { $0.dieOnSignal = false }
+        let stopper = ServerStopper(
+            signaller: ProcessSignaller(system: system),
+            detector: DyingDetector(entry: entry, system: system),
+            exitTimeout: .milliseconds(300)
+        )
+        // Sending succeeds; afterwards the process can no longer be inspected.
+        Task { try? await Task.sleep(for: .milliseconds(100)); system.state.withLock { $0.lookup = .denied } }
+        guard case .failed = await stopper.stop(entry, force: false) else { Issue.record("expected failure"); return }
+    }
+
     @Test func protectedRowsAreNeverSignalled() async {
         let system = FakeSignalSystem(start: start)
         let result = await stopper(system).stop(SampleServers.controlCenter, force: true)
@@ -72,7 +85,11 @@ struct DyingDetector: ServerDetector {
     }
 
     @Test func filtersBySessionOrphansAndPort() async throws {
-        #expect(try await query.entries(.init(sessionID: "sample-session")).map(\.port) == [5173])
+        #expect(try await query.entries(.init(owner: AgentOwner(sessionID: "sample-session", agentPID: nil))).map(\.port) == [5173])
+        // Same Claude Code process, new session ID (after /clear): still the caller's.
+        #expect(try await query.entries(.init(owner: AgentOwner(sessionID: "new-session", agentPID: 40_900))).map(\.port) == [5173])
+        // An ended launcher's PID never confers ownership.
+        #expect(try await query.entries(.init(owner: AgentOwner(sessionID: nil, agentPID: 39_000))).isEmpty)
         #expect(try await query.entries(.init(orphansOnly: true)).map(\.port) == [3000])
         #expect(try await query.entries(.init(port: 8000)).map(\.port) == [8000])
     }

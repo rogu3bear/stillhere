@@ -35,6 +35,8 @@ final class SettingsStore {
     var probeHTTP: Bool {
         didSet { defaults.set(probeHTTP, forKey: Key.probeHTTP) }
     }
+    /// Installed terminals, looked up at launch and when Settings opens.
+    private(set) var installedTerminals: [TerminalApp]
     /// nil means Automatic (see `TerminalApp.resolve`).
     var terminalBundleID: String? {
         didSet { defaults.set(terminalBundleID, forKey: Key.terminalBundleID) }
@@ -63,6 +65,7 @@ final class SettingsStore {
         showHiddenServers = defaults.object(forKey: Key.showHiddenServers) as? Bool ?? false
         probeHTTP = defaults.object(forKey: Key.probeHTTP) as? Bool ?? true
         terminalBundleID = defaults.string(forKey: Key.terminalBundleID)
+        installedTerminals = TerminalApp.findInstalled()
         let base = IgnoreConfiguration.defaults
         hideSystemExecutables = defaults.object(forKey: Key.hideSystemExecutables) as? Bool ?? base.hideSystemExecutables
         hideRootCwdDaemons = defaults.object(forKey: Key.hideRootCwdDaemons) as? Bool ?? base.hideRootCwdDaemons
@@ -72,7 +75,15 @@ final class SettingsStore {
         defaults.set(Self.schemaVersion, forKey: Key.schemaVersion)
     }
 
-    var terminal: TerminalApp { TerminalApp.resolve(preferred: terminalBundleID) }
+    var terminal: TerminalApp { TerminalApp.resolve(preferred: terminalBundleID, among: installedTerminals) }
+
+    /// What Automatic resolves to.
+    var automaticTerminal: TerminalApp { TerminalApp.resolve(preferred: nil, among: installedTerminals) }
+
+    func refreshInstalledTerminals() {
+        let found = TerminalApp.findInstalled()
+        if found != installedTerminals { installedTerminals = found }
+    }
 
     /// The rules the detector classifies with.
     var ignoreConfiguration: IgnoreConfiguration {
