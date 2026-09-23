@@ -1,7 +1,8 @@
 import Foundation
 
 /// Live detector: listeners -> groups by port -> process details -> classification ->
-/// manifest (visible rows only) -> framework guess. Runs on its own actor, never on main.
+/// manifest, git and agent provenance (visible rows only) -> framework guess. Runs on its
+/// own actor, never on main.
 public actor DefaultServerDetector: ServerDetector {
     private let listenerSource: any ListenerSource
     private let inspector: any ProcessInspector
@@ -58,6 +59,14 @@ public actor DefaultServerDetector: ServerDetector {
             cwd: cwd,
             manifest: manifest
         ))
+        var git: GitContext?
+        var agent: AgentContext?
+        if hiddenReason == nil, let process {
+            if let project, cwd != nil {
+                git = GitReader.context(for: project.projectRoot.path(percentEncoded: false), home: homeDirectory)
+            }
+            agent = await agentContext(for: process)
+        }
         return ServerEntry(
             port: group.port,
             rootPID: group.rootPID,
@@ -67,7 +76,37 @@ public actor DefaultServerDetector: ServerDetector {
             process: process,
             project: project,
             framework: framework,
-            hiddenReason: hiddenReason
+            hiddenReason: hiddenReason,
+            git: git,
+            agent: agent
         )
     }
+
+    /// Ancestors are gathered only while no environment marker already names the agent
+    /// with a launcher PID; the launcher itself is looked up to tell alive from orphaned.
+    private func agentContext(for process: ProcessDetails) async -> AgentContext? {
+        let environment = process.agentEnvironment
+        let launcherPID = environment["CLAUDE_PID"].flatMap { Int32($0) }
+        var known: [Int32: ProcessDetails] = [:]
+        if let launcherPID, launcherPID > 1 {
+            known = await inspector.details(for: [launcherPID])
+        }
+        var ancestors: [ProcessDetails] = []
+        if launcherPID == nil {
+            var next = process.ppid
+            while let pid = next, pid > 1, ancestors.count < Self.maxAncestors {
+                guard let parent = await inspector.details(for: [pid])[pid] else { break }
+                ancestors.append(parent)
+                next = parent.ppid
+            }
+        }
+        return AgentDetector.detect(
+            environment: environment,
+            ancestors: ancestors,
+            serverStart: process.startTime,
+            lookup: { known[$0] }
+        )
+    }
+
+    static let maxAncestors = 12
 }

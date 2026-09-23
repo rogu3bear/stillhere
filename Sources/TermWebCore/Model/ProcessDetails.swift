@@ -13,6 +13,8 @@ public struct ProcessDetails: Sendable, Hashable {
     public var executablePath: String?
     public var argv: [String]
     public var cwd: String?
+    /// Only `AgentMarkers.environmentKeys`; never the rest of the environment.
+    public var agentEnvironment: [String: String]
 
     public init(
         pid: Int32,
@@ -23,7 +25,8 @@ public struct ProcessDetails: Sendable, Hashable {
         startTimeIsApproximate: Bool = false,
         executablePath: String? = nil,
         argv: [String] = [],
-        cwd: String? = nil
+        cwd: String? = nil,
+        agentEnvironment: [String: String] = [:]
     ) {
         self.pid = pid
         self.ppid = ppid
@@ -34,5 +37,6 @@ public struct ProcessDetails: Sendable, Hashable {
         self.executablePath = executablePath
         self.argv = argv
         self.cwd = cwd
+        self.agentEnvironment = agentEnvironment
     }
 }

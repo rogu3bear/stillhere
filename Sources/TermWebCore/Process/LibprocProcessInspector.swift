@@ -24,7 +24,8 @@ public struct LibprocProcessInspector: ProcessInspector {
             startTime: info.startTime,
             executablePath: Libproc.executablePath(pid) ?? args?.executablePath,
             argv: args?.argv ?? [],
-            cwd: Libproc.currentDirectory(pid)
+            cwd: Libproc.currentDirectory(pid),
+            agentEnvironment: args?.agentEnvironment ?? [:]
         )
     }
 }

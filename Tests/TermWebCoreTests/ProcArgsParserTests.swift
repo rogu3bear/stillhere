@@ -31,4 +31,29 @@ import Testing
         #expect(ProcArgsParser.parse([1, 0]) == nil)
         #expect(ProcArgsParser.parse(Self.bytes(argc: -1, exec: "/bin/x", argv: [])) == nil)
     }
+
+    @Test func keepsOnlyAllowlistedAgentVariables() throws {
+        let raw = Self.bytes(argc: 1, exec: "/bin/node", argv: ["node"], env: [
+            "CLAUDE_CODE_MESSAGING_TOKEN=secret-token",
+            "CLAUDECODE=1",
+            "PATH=/usr/bin",
+            "CLAUDE_CODE_SESSION_ID=abc-123",
+            "CLAUDE_PID=7820",
+            "AI_AGENT=claude-code_2-1-280_agent",
+            "CLAUDECODE_EXTRA=nope",
+            "NOEQUALS",
+        ])
+        let env = try #require(ProcArgsParser.parse(raw)).agentEnvironment
+        #expect(env == [
+            "CLAUDECODE": "1",
+            "CLAUDE_CODE_SESSION_ID": "abc-123",
+            "CLAUDE_PID": "7820",
+            "AI_AGENT": "claude-code_2-1-280_agent",
+        ])
+    }
+
+    @Test func defaultFixtureSecretIsNeverRead() throws {
+        let raw = Self.bytes(argc: 1, exec: "/bin/x", argv: ["x"])
+        #expect(try #require(ProcArgsParser.parse(raw)).agentEnvironment.isEmpty)
+    }
 }

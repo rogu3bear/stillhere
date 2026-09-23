@@ -24,6 +24,10 @@ public struct ServerEntry: Sendable, Hashable, Identifiable {
     public var project: ProjectLocation?
     public var framework: FrameworkGuess
     public var hiddenReason: HiddenReason?
+    /// The checkout the server runs from (visible rows only).
+    public var git: GitContext?
+    /// The coding agent that started it (visible rows only).
+    public var agent: AgentContext?
 
     public init(
         port: Int,
@@ -34,7 +38,9 @@ public struct ServerEntry: Sendable, Hashable, Identifiable {
         process: ProcessDetails? = nil,
         project: ProjectLocation? = nil,
         framework: FrameworkGuess,
-        hiddenReason: HiddenReason? = nil
+        hiddenReason: HiddenReason? = nil,
+        git: GitContext? = nil,
+        agent: AgentContext? = nil
     ) {
         self.port = port
         self.rootPID = rootPID
@@ -45,6 +51,8 @@ public struct ServerEntry: Sendable, Hashable, Identifiable {
         self.project = project
         self.framework = framework
         self.hiddenReason = hiddenReason
+        self.git = git
+        self.agent = agent
     }
 
     public var isHidden: Bool { hiddenReason != nil }
