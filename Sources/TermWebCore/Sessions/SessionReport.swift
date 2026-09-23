@@ -85,8 +85,9 @@ public struct SessionOverview: Sendable, Hashable {
 
     /// Other independent sessions sharing a checkout with `session`.
     public func collisionPartners(of session: AgentSession) -> [Int32] {
-        collisions.filter { $0.sessionPIDs.contains(session.pid) }
+        let pids = collisions.filter { $0.sessionPIDs.contains(session.pid) }
             .flatMap(\.sessionPIDs).filter { $0 != session.pid }
+        return Array(Set(pids)).sorted() // a partner sharing several checkouts is listed once
     }
 
     public func reports(servers: [ServerEntry], includeIdle: Bool, now: Date = Date()) -> [SessionReport] {

@@ -33,7 +33,7 @@ public enum SampleSessions {
 
     public static let claude = AgentSession(
         pid: 40_900, kind: .claudeCode, startTime: SampleServers.referenceDate.addingTimeInterval(-2_400),
-        cwd: shop.checkoutRoot, checkouts: [shop]
+        cwd: shop.checkoutRoot, ownCheckout: shop, checkouts: [shop]
     )
     public static let codex = AgentSession(
         pid: 42_000, kind: .codex, startTime: SampleServers.referenceDate.addingTimeInterval(-600),

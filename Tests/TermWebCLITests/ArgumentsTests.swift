@@ -80,7 +80,7 @@ import TermWebCore
     func overview() -> SessionOverview {
         let web = GitContext(checkoutRoot: "/Users/me/dev/web", branch: "main")
         return SessionOverview(sessions: [
-            AgentSession(pid: 111, kind: .claudeCode, startTime: t0, checkouts: [web]),
+            AgentSession(pid: 111, kind: .claudeCode, startTime: t0, ownCheckout: web, checkouts: [web]),
             AgentSession(pid: 121, kind: .codex, startTime: t0, checkouts: [web]),
             AgentSession(pid: 131, kind: .claudeCode, startTime: t0, checkouts: [GitContext(checkoutRoot: "/Users/me/dev/api")]),
         ])

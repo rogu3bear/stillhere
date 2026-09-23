@@ -50,7 +50,7 @@ public struct SessionScanner: Sendable {
         now: Date
     ) -> [AgentSession] {
         let roots = table.records.values.filter(isAgentRoot).sorted { $0.pid < $1.pid }
-        let wrappers = launcherWrappers(roots, in: table)
+        let wrappers = launcherWrappers(roots)
         let sessionPIDs = Set(roots.map(\.pid)).subtracting(wrappers)
         let homeRoot = URL(fileURLWithPath: home, isDirectory: true).standardized.path
 
@@ -88,12 +88,12 @@ public struct SessionScanner: Sendable {
 
     /// `node …/codex.js` launching the native `codex` binary is one session, not two: a
     /// node-hosted root whose only agent child has the same kind is dropped as a wrapper.
-    static func launcherWrappers(_ roots: [ProcessRecord], in table: ProcessTable) -> Set<Int32> {
+    /// Only a direct child counts: a delegated worker runs under a shell (a grandchild),
+    /// and its npm-installed supervisor is a real session.
+    static func launcherWrappers(_ roots: [ProcessRecord]) -> Set<Int32> {
         var wrappers: Set<Int32> = []
         for root in roots where root.name == "node" {
-            let agentChildren = roots.filter {
-                $0.pid != root.pid && table.ancestors(of: $0.pid).first(where: isAgentRoot)?.pid == root.pid
-            }
+            let agentChildren = roots.filter { $0.ppid == root.pid }
             if agentChildren.count == 1, agentChildren[0].agentKind == root.agentKind { wrappers.insert(root.pid) }
         }
         return wrappers

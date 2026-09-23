@@ -121,6 +121,25 @@ import Testing
         #expect(found.first?.parentSessionPID == nil)
     }
 
+    @Test func npmSessionWithOneDelegatedWorkerIsNotAWrapper() {
+        // node claude (npm install) -> sh (Bash tool) -> claude -p worker.
+        var supervisor = record(400, 1, "node")
+        supervisor.agentKind = .claudeCode
+        let found = sessions([supervisor, record(401, 400, "sh"), record(402, 401, "claude")],
+                             cwds: [400: "/Users/me/dev/web", 402: "/Users/me/dev/web"])
+        #expect(found.map(\.pid) == [400, 402])
+        #expect(found.first { $0.pid == 402 }?.parentSessionPID == 400)
+    }
+
+    @Test func ownCheckoutIsOnlyTheSessionsOwnDirectory() {
+        // Started in ~, now running a command in a repo: working there, but not started there.
+        let found = sessions([record(111, 1, "claude"), record(112, 111, "zsh")],
+                             cwds: [111: home, 112: "/Users/me/dev/web"])
+        #expect(found.first?.checkouts.map(\.checkoutRoot) == ["/Users/me/dev/web"])
+        #expect(found.first?.ownCheckout == nil)
+        #expect(AgentSession(pid: 1, kind: .codex, startTime: t0, checkouts: [GitContext(checkoutRoot: "/Users/me/dev/web")]).ownCheckout == nil)
+    }
+
     @Test func brandNewSessionsDoNotCollideUnlessTheyAreTheCaller() {
         let web = GitContext(checkoutRoot: "/Users/me/dev/web")
         let now = t0.addingTimeInterval(100)
@@ -160,5 +179,14 @@ import Testing
         #expect(overview.displayOrder.map { [$0.session.pid, Int32($0.depth)] } == [[20, 0], [30, 0], [10, 0], [11, 1]])
         #expect(overview.collisionPartners(of: overview.sessions[2]) == [30])
         #expect(overview.collisionPartners(of: overview.sessions[0]).isEmpty)
+    }
+
+    @Test func partnersSharingSeveralCheckoutsAreListedOnce() {
+        let overview = SessionOverview(sessions: [
+            AgentSession(pid: 1, kind: .claudeCode, startTime: t0, checkouts: [checkout("api"), checkout("web")]),
+            AgentSession(pid: 2, kind: .codex, startTime: t0, checkouts: [checkout("api"), checkout("web")]),
+        ])
+        #expect(overview.collisions.count == 2)
+        #expect(overview.collisionPartners(of: overview.sessions[0]) == [2])
     }
 }
