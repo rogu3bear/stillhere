@@ -26,11 +26,11 @@ struct ListCommand {
     func run() async throws -> Int32 {
         var filter = ServerQuery.Filter(includeHidden: arguments.flag("all"), orphansOnly: arguments.flag("orphans"))
         if arguments.flag("mine") {
-            guard let session = CallerSession.id else {
-                output.error("--mine only works inside a Claude Code session (CLAUDE_CODE_SESSION_ID is not set)")
+            guard let owner = Caller.owner else {
+                output.error("--mine only works inside a Claude Code session (CLAUDE_CODE_SESSION_ID and CLAUDE_PID are not set)")
                 return 1
             }
-            filter.sessionID = session
+            filter.owner = owner
         }
         let reports = try await ServerQuery().reports(filter, probe: !arguments.flag("no-probe"))
         if arguments.flag("json") {
@@ -45,7 +45,7 @@ struct ListCommand {
 
     private func emptyMessage(_ filter: ServerQuery.Filter) -> String {
         if filter.orphansOnly { return "No orphaned servers." }
-        if filter.sessionID != nil { return "No servers started by this session." }
+        if filter.owner != nil { return "No servers started by this session." }
         return filter.includeHidden ? "No listening servers." : "No dev servers running. (--all shows hidden listeners)"
     }
 }

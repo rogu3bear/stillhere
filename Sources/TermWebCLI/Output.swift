@@ -27,16 +27,14 @@ struct Output {
     /// Asks on the terminal; false when stdin is not a terminal.
     func confirm(_ question: String) -> Bool {
         guard inputIsTerminal else { return false }
-        FileHandle.standardOutput.write(Data("\(question) [y/N] ".utf8))
+        // stderr, so the question stays visible when stdout is piped.
+        FileHandle.standardError.write(Data("\(question) [y/N] ".utf8))
         let answer = readLine()?.trimmingCharacters(in: .whitespaces).lowercased()
         return answer == "y" || answer == "yes"
     }
 }
 
-/// The calling agent session, when the CLI itself runs inside one.
-enum CallerSession {
-    static var id: String? {
-        let value = ProcessInfo.processInfo.environment["CLAUDE_CODE_SESSION_ID"]
-        return value?.isEmpty == false ? value : nil
-    }
+/// The calling agent, when the CLI itself runs inside a Claude Code session.
+enum Caller {
+    static var owner: AgentOwner? { AgentOwner(environment: ProcessInfo.processInfo.environment) }
 }

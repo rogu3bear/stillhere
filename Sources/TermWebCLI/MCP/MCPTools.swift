@@ -3,9 +3,9 @@ import TermWebCore
 
 /// The MCP tools: list, wait for and stop local dev servers.
 struct MCPTools: Sendable {
-    /// The agent session this server runs in (inherited from Claude Code), used for
-    /// `mine` and for the stop ownership rule.
-    var callerSession: String? = CallerSession.id
+    /// The agent this server runs under (inherited from Claude Code), used for `mine` and
+    /// for the stop ownership rule. Matches by session ID or by the Claude Code process.
+    var caller: AgentOwner? = Caller.owner
     var query = ServerQuery()
     var stopper = ServerStopper()
     var maxWait: Double = 120
@@ -76,23 +76,25 @@ struct MCPTools: Sendable {
     }
 
     func list(_ arguments: JSONValue) async throws -> JSONValue {
+        if let invalid = invalidPort(arguments, required: false) { return invalid }
         var filter = ServerQuery.Filter(
             includeHidden: arguments["include_hidden"]?.boolValue ?? false,
             orphansOnly: arguments["orphans_only"]?.boolValue ?? false,
-            port: try port(arguments, required: false)
+            port: arguments["port"]?.intValue
         )
         if arguments["mine"]?.boolValue == true {
-            guard let callerSession else {
-                return Self.toolError("mine=true needs the MCP server to run inside a Claude Code session (CLAUDE_CODE_SESSION_ID is not set).")
+            guard let caller else {
+                return Self.toolError("mine=true needs the MCP server to run inside a Claude Code session (CLAUDE_CODE_SESSION_ID and CLAUDE_PID are not set).")
             }
-            filter.sessionID = callerSession
+            filter.owner = caller
         }
         let reports = try await query.reports(filter)
         return try Self.toolResult(["servers": JSONValue(encoding: reports)])
     }
 
     func wait(_ arguments: JSONValue) async throws -> JSONValue {
-        let port = try port(arguments, required: true)!
+        if let invalid = invalidPort(arguments, required: true) { return invalid }
+        guard let port = arguments["port"]?.intValue else { return Self.toolError("port is required") }
         let timeout = min(max(arguments["timeout_seconds"]?.doubleValue ?? 30, 0), maxWait)
         let requireHTTP = arguments["require_http"]?.boolValue ?? true
         let outcome = await ServerWaiter(query: query).wait(port: port, timeout: .seconds(timeout), requireHTTP: requireHTTP)
@@ -105,9 +107,15 @@ struct MCPTools: Sendable {
     }
 
     func stop(_ arguments: JSONValue) async throws -> JSONValue {
-        let port = try port(arguments, required: true)!
+        if let invalid = invalidPort(arguments, required: true) { return invalid }
+        guard let port = arguments["port"]?.intValue else { return Self.toolError("port is required") }
         var found = try await query.entries(.init(includeHidden: true, port: port))
-        if let pid = arguments["pid"]?.intValue { found = found.filter { $0.rootPID == Int32(pid) } }
+        if let raw = arguments["pid"] {
+            guard let pid = raw.intValue.flatMap({ Int32(exactly: $0) }), pid > 0 else {
+                return Self.toolError("pid must be a process ID (a positive 32-bit integer).")
+            }
+            found = found.filter { $0.rootPID == pid }
+        }
         guard found.count == 1, let entry = found.first else {
             let message = found.isEmpty
                 ? "Nothing matching is listening on port \(port)."
@@ -115,7 +123,7 @@ struct MCPTools: Sendable {
             return Self.toolError(message)
         }
         let anyOwner = arguments["any_owner"]?.boolValue ?? false
-        if !anyOwner, callerSession == nil || entry.agent?.sessionID != callerSession {
+        if !anyOwner, caller?.owns(entry.agent) != true {
             return Self.toolError("Port \(port) was not started by this agent session, so it was not stopped. Ask the user, then pass any_owner=true.")
         }
         let result = await stopper.stop(entry, force: arguments["force"]?.boolValue ?? false)
@@ -127,15 +135,16 @@ struct MCPTools: Sendable {
         ], isError: !result.succeeded)
     }
 
-    private func port(_ arguments: JSONValue, required: Bool) throws -> Int? {
+    /// Bad arguments come back as tool errors (not JSON-RPC errors) so the model can see
+    /// the message and correct the call.
+    private func invalidPort(_ arguments: JSONValue, required: Bool) -> JSONValue? {
         guard let raw = arguments["port"] else {
-            if required { throw RPCFailure(code: -32602, message: "Invalid params: port is required") }
-            return nil
+            return required ? Self.toolError("port is required.") : nil
         }
         guard let port = raw.intValue, (1...65_535).contains(port) else {
-            throw RPCFailure(code: -32602, message: "Invalid params: port must be an integer 1-65535")
+            return Self.toolError("port must be an integer from 1 to 65535.")
         }
-        return port
+        return nil
     }
 
     /// Tool results carry the data twice: `structuredContent` for clients that read it and

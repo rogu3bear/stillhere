@@ -4,14 +4,14 @@ import Foundation
 public struct ServerQuery: Sendable {
     public struct Filter: Sendable, Hashable {
         public var includeHidden = false
-        /// Only servers whose agent session ID equals this one.
-        public var sessionID: String?
+        /// Only servers started by this agent (session or agent process).
+        public var owner: AgentOwner?
         public var orphansOnly = false
         public var port: Int?
 
-        public init(includeHidden: Bool = false, sessionID: String? = nil, orphansOnly: Bool = false, port: Int? = nil) {
+        public init(includeHidden: Bool = false, owner: AgentOwner? = nil, orphansOnly: Bool = false, port: Int? = nil) {
             self.includeHidden = includeHidden
-            self.sessionID = sessionID
+            self.owner = owner
             self.orphansOnly = orphansOnly
             self.port = port
         }
@@ -19,7 +19,7 @@ public struct ServerQuery: Sendable {
         public func matches(_ entry: ServerEntry) -> Bool {
             if !includeHidden, entry.isHidden { return false }
             if let port, entry.port != port { return false }
-            if let sessionID, entry.agent?.sessionID != sessionID { return false }
+            if let owner, !owner.owns(entry.agent) { return false }
             if orphansOnly, entry.agent?.isOrphaned != true { return false }
             return true
         }

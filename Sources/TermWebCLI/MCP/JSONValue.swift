@@ -57,7 +57,7 @@ enum JSONValue: Sendable, Hashable, Codable {
     }
 
     var intValue: Int? {
-        if case .number(let value) = self, value.rounded() == value { return Int(value) }
+        if case .number(let value) = self { return Int(exactly: value) }
         return nil
     }
 

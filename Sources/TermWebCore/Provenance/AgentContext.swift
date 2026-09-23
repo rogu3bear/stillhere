@@ -86,3 +86,32 @@ public enum AgentMarkers {
         "amp": .other("Amp"),
     ]
 }
+
+/// Who is asking, for "servers I started" and the stop ownership rule: the calling
+/// agent's session ID and its agent process. A server belongs to the caller when either
+/// matches, so ownership survives a session ID change inside one Claude Code process
+/// (`/clear`, resume).
+public struct AgentOwner: Sendable, Hashable {
+    public var sessionID: String?
+    public var agentPID: Int32?
+
+    public init(sessionID: String?, agentPID: Int32?) {
+        self.sessionID = sessionID
+        self.agentPID = agentPID
+    }
+
+    /// The owner described by Claude Code's markers in `environment`, if any.
+    public init?(environment: [String: String]) {
+        let session = environment["CLAUDE_CODE_SESSION_ID"].flatMap { $0.isEmpty ? nil : $0 }
+        let pid = environment["CLAUDE_PID"].flatMap { Int32($0) }.flatMap { $0 > 1 ? $0 : nil }
+        guard session != nil || pid != nil else { return nil }
+        self.init(sessionID: session, agentPID: pid)
+    }
+
+    public func owns(_ agent: AgentContext?) -> Bool {
+        guard let agent else { return false }
+        if let sessionID, agent.sessionID == sessionID { return true }
+        if let agentPID, agent.launcherPID == agentPID, agent.launcherAlive == true { return true }
+        return false
+    }
+}

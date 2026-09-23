@@ -34,11 +34,27 @@ struct MCPServer {
         let writer = LineWriter()
         await withTaskGroup(of: Void.self) { group in
             do {
-                for try await line in FileHandle.standardInput.bytes.lines where !line.isEmpty {
+                // Split on LF bytes only: `AsyncLineSequence` also breaks on U+2028/U+2029,
+                // which JSON allows unescaped inside strings.
+                var buffer: [UInt8] = []
+                func dispatch(_ bytes: [UInt8]) {
+                    var bytes = bytes
+                    if bytes.last == UInt8(ascii: "\r") { bytes.removeLast() }
+                    guard !bytes.isEmpty else { return }
+                    let line = String(decoding: bytes, as: UTF8.self)
                     group.addTask {
                         if let response = await handle(line: line) { await writer.write(response) }
                     }
                 }
+                for try await byte in FileHandle.standardInput.bytes {
+                    if byte == UInt8(ascii: "\n") {
+                        dispatch(buffer)
+                        buffer.removeAll(keepingCapacity: true)
+                    } else {
+                        buffer.append(byte)
+                    }
+                }
+                dispatch(buffer)
             } catch {
                 FileHandle.standardError.write(Data("term-web mcp: stdin error: \(error)\n".utf8))
             }
@@ -47,14 +63,17 @@ struct MCPServer {
 
     /// One JSON-RPC message in, at most one response out (notifications get none).
     func handle(line: String) async -> JSONValue? {
-        guard let message = try? JSONDecoder().decode(JSONValue.self, from: Data(line.utf8)),
-              case .object = message
-        else { return Self.error(id: .null, code: -32700, message: "Parse error") }
+        guard let message = try? JSONDecoder().decode(JSONValue.self, from: Data(line.utf8)) else {
+            return Self.error(id: .null, code: -32700, message: "Parse error")
+        }
+        // Batches and non-object messages are not requests (MCP does not use batching).
+        guard case .object = message else { return Self.error(id: .null, code: -32600, message: "Invalid Request") }
         let id = message["id"]
         guard let method = message["method"]?.stringValue else {
-            return id.map { Self.error(id: $0, code: -32600, message: "Invalid Request") }
+            return id.map { Self.error(id: Self.isValidID($0) ? $0 : .null, code: -32600, message: "Invalid Request") }
         }
-        guard let id, id != .null else { return nil } // notification
+        guard let id else { return nil } // notification
+        guard Self.isValidID(id) else { return Self.error(id: .null, code: -32600, message: "Invalid Request: id must be a string or integer") }
         let params = message["params"] ?? [:]
         do {
             return Self.result(id: id, try await dispatch(method: method, params: params))
@@ -78,8 +97,20 @@ struct MCPServer {
         }
         guard case .object(var object) = result else { return result }
         object["resultType"] = "complete"
-        if modern { object["_meta"] = ["io.modelcontextprotocol/serverInfo": Self.serverInfo] }
+        // Discovery always identifies the server: clients probe with it before choosing an era.
+        if modern || method == "server/discover" {
+            object["_meta"] = ["io.modelcontextprotocol/serverInfo": Self.serverInfo]
+        }
         return .object(object)
+    }
+
+    /// MCP request ids are strings or integers, never null.
+    static func isValidID(_ id: JSONValue) -> Bool {
+        switch id {
+        case .string: true
+        case .number: id.intValue != nil
+        default: false
+        }
     }
 
     /// true for a modern request; legacy requests (no protocol version in `_meta`) pass.

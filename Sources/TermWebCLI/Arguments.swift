@@ -37,6 +37,18 @@ struct Arguments {
 
     func option(_ name: String) -> String? { options[name] }
 
+    /// Upper bound for durations given in seconds (one day).
+    static let maxSeconds: Double = 86_400
+
+    /// A PID option: a positive 32-bit integer.
+    func pid(_ name: String) throws -> Int32? {
+        guard let value = try int(name) else { return nil }
+        guard let pid = Int32(exactly: value), pid > 0 else {
+            throw UsageError(description: "--\(name) must be a process ID, got '\(value)'")
+        }
+        return pid
+    }
+
     func int(_ name: String) throws -> Int? {
         guard let raw = options[name] else { return nil }
         guard let value = Int(raw) else { throw UsageError(description: "--\(name) must be a whole number, got '\(raw)'") }
@@ -45,7 +57,9 @@ struct Arguments {
 
     func double(_ name: String) throws -> Double? {
         guard let raw = options[name] else { return nil }
-        guard let value = Double(raw), value >= 0 else { throw UsageError(description: "--\(name) must be a non-negative number, got '\(raw)'") }
+        guard let value = Double(raw), value.isFinite, (0...Self.maxSeconds).contains(value) else {
+            throw UsageError(description: "--\(name) must be a number from 0 to \(Int(Self.maxSeconds)), got '\(raw)'")
+        }
         return value
     }
 

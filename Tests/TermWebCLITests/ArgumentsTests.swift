@@ -66,5 +66,9 @@ import TermWebCore
         #expect(await TermWebCLI.run(["stop"], output: output) == 2)
         #expect(await TermWebCLI.run(["wait", "notaport"], output: output) == 2)
         #expect(await TermWebCLI.run(["version"], output: output) == 0)
+        #expect(await TermWebCLI.run(["wait", "3000", "--timeout", "inf"], output: output) == 2)
+        #expect(await TermWebCLI.run(["wait", "3000", "--timeout", "1e300"], output: output) == 2)
+        #expect(await TermWebCLI.run(["stop", "3000", "--pid", "5000000000"], output: output) == 2)
+        #expect(await TermWebCLI.run(["stop", "--orphans", "--pid", "42"], output: output) == 2)
     }
 }

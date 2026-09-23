@@ -20,7 +20,7 @@ struct GoneSignalSystem: SignalSystem {
     func server(session: String? = "sample-session") -> MCPServer {
         let detector = FakeServerDetector()
         return MCPServer(tools: MCPTools(
-            callerSession: session,
+            caller: session.map { AgentOwner(sessionID: $0, agentPID: nil) },
             query: ServerQuery(detector: detector),
             stopper: ServerStopper(signaller: ProcessSignaller(system: GoneSignalSystem()), detector: detector, exitTimeout: .milliseconds(50))
         ))
@@ -88,6 +88,45 @@ struct GoneSignalSystem: SignalSystem {
             "name": "stop_server", "arguments": ["port": 5173],
         ]])
         #expect(own["result"]?["structuredContent"]?["pid"]?.intValue == 41_001)
+    }
+
+    @Test func hostileNumbersBecomeToolErrorsNotCrashes() async throws {
+        for arguments: JSONValue in [["port": .number(1e30)], ["port": 5173, "pid": .number(5e9)], ["port": "5173"], [:]] {
+            let response = try await call(server(), ["jsonrpc": "2.0", "id": 10, "method": "tools/call", "params": [
+                "name": "stop_server", "arguments": arguments,
+            ]])
+            #expect(response["result"]?["isError"] == true)
+        }
+        #expect(JSONValue.number(1e30).intValue == nil)
+        #expect(JSONValue.number(2.5).intValue == nil)
+    }
+
+    @Test func invalidRequestsGetInvalidRequest() async {
+        #expect(await server().handle(line: #"[{"jsonrpc":"2.0","id":1,"method":"ping"}]"#)?["error"]?["code"]?.intValue == -32600)
+        #expect(await server().handle(line: #"{"jsonrpc":"2.0","id":true,"method":"ping"}"#)?["error"]?["code"]?.intValue == -32600)
+        #expect(await server().handle(line: #"{"jsonrpc":"2.0","id":null,"method":"ping"}"#)?["error"]?["code"]?.intValue == -32600)
+        #expect(await server().handle(line: #"{"jsonrpc":"2.0","id":"a","method":"ping"}"#)?["result"] != nil)
+    }
+
+    @Test func discoverAlwaysIdentifiesTheServer() async throws {
+        let response = try await call(server(), ["jsonrpc": "2.0", "id": 11, "method": "server/discover"])
+        #expect(response["result"]?["_meta"]?["io.modelcontextprotocol/serverInfo"]?["name"] == "term-web")
+    }
+
+    @Test func ownershipFollowsTheClaudeProcessAcrossSessionChanges() async throws {
+        let detector = FakeServerDetector()
+        let server = MCPServer(tools: MCPTools(
+            caller: AgentOwner(sessionID: "after-clear", agentPID: 40_900),
+            query: ServerQuery(detector: detector),
+            stopper: ServerStopper(signaller: ProcessSignaller(system: GoneSignalSystem()), detector: detector, exitTimeout: .milliseconds(50))
+        ))
+        let response = try await call(server, ["jsonrpc": "2.0", "id": 12, "method": "tools/call", "params": [
+            "name": "list_servers", "arguments": ["mine": true],
+        ]])
+        guard case .array(let servers)? = response["result"]?["structuredContent"]?["servers"] else {
+            Issue.record("no servers array"); return
+        }
+        #expect(servers.map { $0["port"]?.intValue } == [5173])
     }
 
     @Test func toolDefinitionsDeclareObjectSchemasAndHints() {

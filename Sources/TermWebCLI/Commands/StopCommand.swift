@@ -24,13 +24,15 @@ struct StopCommand {
     init(_ raw: [String], output: Output) throws {
         let arguments = try Arguments(raw, booleanFlags: ["orphans", "yes", "force"], valueOptions: ["pid"])
         orphans = arguments.flag("orphans")
+        pid = try arguments.pid("pid")
         if orphans {
-            guard arguments.positionals.isEmpty else { throw Arguments.UsageError(description: "--orphans takes no port") }
+            guard arguments.positionals.isEmpty, pid == nil else {
+                throw Arguments.UsageError(description: "--orphans takes no port or --pid")
+            }
             port = nil
         } else {
             port = try arguments.port()
         }
-        pid = try arguments.int("pid").map(Int32.init)
         assumeYes = arguments.flag("yes")
         force = arguments.flag("force")
         self.output = output
