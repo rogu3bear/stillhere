@@ -24,6 +24,20 @@ import TermWebCore
         #expect(model.orphanCount == 1) // SampleServers.next: its Claude Code session ended
     }
 
+    @Test func refreshLoadsSessionsAndCountsCollisions() async {
+        let model = ServerListModel(
+            detector: FakeServerDetector(),
+            sessionSource: FakeSessionSource(),
+            settings: SettingsStore(defaults: temp.defaults),
+            signaller: ProcessSignaller(system: InertSignalSystem()),
+            clock: FixedNow(SampleServers.referenceDate)
+        )
+        await model.refresh(.manual)
+        #expect(model.sessionOverview.sessions.map(\.pid) == [40_900, 42_000])
+        #expect(model.collisionCount == 1)
+        #expect(model.servers.filter(SampleSessions.claude.owns).map(\.port) == [5173])
+    }
+
     @Test func showHiddenDoesNotChangeTheCount() async {
         let model = ServerListModel.make(FakeServerDetector(), defaults: temp)
         model.settings.showHiddenServers = true

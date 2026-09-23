@@ -45,13 +45,48 @@ public struct SessionReport: Sendable, Hashable, Encodable {
 }
 
 /// Sessions, their collisions and the servers they started, from one scan.
-public struct SessionOverview: Sendable {
+public struct SessionOverview: Sendable, Hashable {
     public var sessions: [AgentSession]
     public var collisions: [SessionCollision]
 
     public init(sessions: [AgentSession]) {
         self.sessions = sessions
         collisions = SessionScanner.collisions(sessions)
+    }
+
+    public static let empty = SessionOverview(sessions: [])
+
+    /// Sessions working in at least one checkout.
+    public var active: [AgentSession] { sessions.filter { !$0.isIdle } }
+
+    /// Active sessions for display: colliding top-level sessions first, then by checkout
+    /// name; each followed by its workers (with their nesting depth).
+    public var displayOrder: [(session: AgentSession, depth: Int)] {
+        let active = active
+        let activePIDs = Set(active.map(\.pid))
+        let colliding = Set(collisions.flatMap(\.sessionPIDs))
+        func sortKey(_ session: AgentSession) -> (Int, String, Int32) {
+            (colliding.contains(session.pid) ? 0 : 1, session.checkouts.first?.checkoutRoot ?? "", session.pid)
+        }
+        let children = Dictionary(grouping: active.filter { $0.parentSessionPID.map(activePIDs.contains) == true },
+                                  by: { $0.parentSessionPID! })
+        var result: [(AgentSession, Int)] = []
+        func visit(_ session: AgentSession, depth: Int) {
+            result.append((session, depth))
+            for child in (children[session.pid] ?? []).sorted(by: { sortKey($0) < sortKey($1) }) {
+                visit(child, depth: depth + 1)
+            }
+        }
+        for root in active.filter({ $0.parentSessionPID.map(activePIDs.contains) != true }).sorted(by: { sortKey($0) < sortKey($1) }) {
+            visit(root, depth: 0)
+        }
+        return result
+    }
+
+    /// Other independent sessions sharing a checkout with `session`.
+    public func collisionPartners(of session: AgentSession) -> [Int32] {
+        collisions.filter { $0.sessionPIDs.contains(session.pid) }
+            .flatMap(\.sessionPIDs).filter { $0 != session.pid }
     }
 
     public func reports(servers: [ServerEntry], includeIdle: Bool, now: Date = Date()) -> [SessionReport] {

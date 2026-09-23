@@ -5,6 +5,7 @@ import TermWebCore
 /// The composition root: every dependency the app's stores and views need.
 struct AppEnvironment {
     var detector: any ServerDetector
+    var sessionSource: any SessionSource
     var defaults: UserDefaults
     var signaller: ProcessSignaller
     var loginItems: any LoginItemService
@@ -14,6 +15,7 @@ struct AppEnvironment {
     static func live() -> AppEnvironment {
         AppEnvironment(
             detector: DefaultServerDetector(),
+            sessionSource: LiveSessionSource(),
             defaults: .standard,
             signaller: ProcessSignaller(system: DarwinSignalSystem()),
             loginItems: MainAppLoginItem(),
@@ -25,6 +27,7 @@ struct AppEnvironment {
     static func preview(scenario: FakeServerDetector.Scenario = .init()) -> AppEnvironment {
         AppEnvironment(
             detector: FakeServerDetector(scenario: scenario),
+            sessionSource: FakeSessionSource(),
             defaults: UserDefaults(suiteName: "com.mlnavigator.term-web.preview") ?? .standard,
             signaller: ProcessSignaller(system: InertSignalSystem()),
             loginItems: InertLoginItem(),
@@ -42,7 +45,12 @@ struct AppStores {
 
     init(_ environment: AppEnvironment) {
         settings = SettingsStore(defaults: environment.defaults)
-        model = ServerListModel(detector: environment.detector, settings: settings, signaller: environment.signaller)
+        model = ServerListModel(
+            detector: environment.detector,
+            sessionSource: environment.sessionSource,
+            settings: settings,
+            signaller: environment.signaller
+        )
         launchAtLogin = LaunchAtLoginController(service: environment.loginItems)
         actions = environment.actions
     }

@@ -90,3 +90,21 @@ import Testing
         #expect(table.records.count > 10)
     }
 }
+
+@Suite struct SessionOverviewTests {
+    let t0 = Date(timeIntervalSince1970: 1_000)
+    func checkout(_ name: String) -> GitContext { GitContext(checkoutRoot: "/Users/me/dev/\(name)", branch: "main") }
+
+    @Test func collidingSessionsComeFirstAndWorkersFollowTheirParent() {
+        let overview = SessionOverview(sessions: [
+            AgentSession(pid: 10, kind: .claudeCode, startTime: t0, checkouts: [checkout("api")]),
+            AgentSession(pid: 11, kind: .claudeCode, startTime: t0, checkouts: [checkout("api")], parentSessionPID: 10),
+            AgentSession(pid: 20, kind: .claudeCode, startTime: t0, checkouts: [checkout("web")]),
+            AgentSession(pid: 30, kind: .codex, startTime: t0, checkouts: [checkout("web")]),
+            AgentSession(pid: 40, kind: .codex, startTime: t0),
+        ])
+        #expect(overview.displayOrder.map { [$0.session.pid, Int32($0.depth)] } == [[20, 0], [30, 0], [10, 0], [11, 1]])
+        #expect(overview.collisionPartners(of: overview.sessions[2]) == [30])
+        #expect(overview.collisionPartners(of: overview.sessions[0]).isEmpty)
+    }
+}

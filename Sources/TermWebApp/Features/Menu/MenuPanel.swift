@@ -10,6 +10,7 @@ struct MenuPanel: View {
         VStack(alignment: .leading, spacing: 0) {
             MenuHeader()
             Divider()
+            SessionsSection()
             ServerList()
             Divider()
             MenuFooter()

@@ -12,6 +12,8 @@ final class ServerListModel {
     }
 
     private(set) var servers: [ServerEntry] = []
+    /// Running agent sessions and the checkouts they share.
+    private(set) var sessionOverview = SessionOverview.empty
     private(set) var probeRecords: [ServerEntry.ID: ProbeRecord] = [:]
     private(set) var lastError: String?
     private(set) var isRefreshing = false
@@ -23,6 +25,7 @@ final class ServerListModel {
     let stopFlow: StopFlow
 
     @ObservationIgnored private let detector: any ServerDetector
+    @ObservationIgnored private let sessionSource: any SessionSource
     @ObservationIgnored private let clock: any NowProvider
     @ObservationIgnored private var scanTask: Task<Void, Never>?
     @ObservationIgnored private var pollingTask: Task<Void, Never>?
@@ -31,6 +34,7 @@ final class ServerListModel {
 
     init(
         detector: any ServerDetector,
+        sessionSource: any SessionSource = FakeSessionSource([]),
         settings: SettingsStore,
         signaller: ProcessSignaller,
         clock: any NowProvider = SystemNow(),
@@ -38,6 +42,7 @@ final class ServerListModel {
         stopPollInterval: Duration = .milliseconds(250)
     ) {
         self.detector = detector
+        self.sessionSource = sessionSource
         self.settings = settings
         self.clock = clock
         stopFlow = StopFlow(
@@ -56,6 +61,8 @@ final class ServerListModel {
     var hiddenServers: [ServerEntry] { servers.filter(\.isHidden) }
     /// The menu bar count: visible servers, whether or not hidden ones are shown.
     var visibleCount: Int { servers.count { !$0.isHidden } }
+    /// Independent agent sessions sharing a checkout.
+    var collisionCount: Int { sessionOverview.collisions.count }
     /// Visible servers whose launching agent session has ended.
     var orphanCount: Int { servers.count { !$0.isHidden && $0.agent?.isOrphaned == true } }
 
@@ -159,6 +166,8 @@ final class ServerListModel {
     private func performScan() async {
         isRefreshing = true
         defer { isRefreshing = false }
+        let overview = SessionOverview(sessions: await sessionSource.sessions())
+        if overview != sessionOverview { sessionOverview = overview }
         do {
             let entries = try await detector.scan(config: settings.ignoreConfiguration)
             if entries != servers { servers = entries }

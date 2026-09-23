@@ -10,6 +10,12 @@ struct MenuHeader: View {
             HStack(spacing: 8) {
                 Text(title)
                     .font(.headline)
+                if model.collisionCount > 0 {
+                    Text(model.collisionCount == 1 ? "1 collision" : "\(model.collisionCount) collisions")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.orange)
+                        .help("Independent agent sessions are working in the same checkout")
+                }
                 if model.orphanCount > 0 {
                     Text("\(model.orphanCount) orphaned")
                         .font(.caption.weight(.medium))
