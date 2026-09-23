@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+    <title>term-web</title>
+    <options customize="never" require-scripts="false" hostArchitectures="arm64" rootVolumeOnly="true"/>
+    <domains enable_localSystem="true" enable_currentUserHome="false" enable_anywhere="false"/>
+    <volume-check>
+        <allowed-os-versions>
+            <os-version min="@MIN_MACOS@"/>
+        </allowed-os-versions>
+    </volume-check>
+    <choices-outline>
+        <line choice="default">
+            <line choice="com.mlnavigator.term-web.pkg"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="com.mlnavigator.term-web.pkg" visible="false">
+        <pkg-ref id="com.mlnavigator.term-web.pkg"/>
+    </choice>
+    <pkg-ref id="com.mlnavigator.term-web.pkg" version="@VERSION@" onConclusion="none">term-web-component.pkg</pkg-ref>
+</installer-gui-script>
