@@ -78,6 +78,27 @@ import Testing
         #expect(context.launcherPID == 40)
     }
 
+    @Test func agentIdentityUsesNamePathAndNodeArgv() {
+        // Native Claude Code: the kernel names the process after its version.
+        #expect(AgentMarkers.kind(name: "2.1.280", executablePath: "/Users/me/.local/share/claude/versions/2.1.280") == .claudeCode)
+        #expect(AgentMarkers.kind(name: "codex", executablePath: nil) == .codex)
+        #expect(AgentMarkers.kind(name: "x", executablePath: "/opt/homebrew/bin/codex") == .codex)
+        #expect(AgentMarkers.kind(name: "node", executablePath: "/usr/local/bin/node",
+                                  argv: ["node", "/usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js"]) == .claudeCode)
+        #expect(AgentMarkers.kind(name: "node", executablePath: "/usr/local/bin/node", argv: ["node", "server.js"]) == nil)
+        #expect(AgentMarkers.kind(name: "2.1.280", executablePath: "/opt/app/versions/2.1.280") == nil)
+    }
+
+    @Test func ancestryFindsNativeClaudeByPath() throws {
+        let claude = ProcessDetails(pid: 40, name: "2.1.280", startTime: Date(timeIntervalSince1970: 1_000),
+                                    executablePath: "/Users/me/.local/share/claude/versions/2.1.280")
+        let context = try #require(AgentDetector.detect(
+            environment: [:], ancestors: [process(50, name: "zsh"), claude], serverStart: serverStart, lookup: { _ in nil }
+        ))
+        #expect(context.kind == .claudeCode)
+        #expect(context.launcherPID == 40)
+    }
+
     @Test func plainProcessesHaveNoAgent() {
         #expect(AgentDetector.detect(
             environment: [:], ancestors: [process(50, name: "zsh"), process(40, name: "login")],

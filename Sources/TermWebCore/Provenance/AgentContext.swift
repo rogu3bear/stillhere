@@ -75,6 +75,23 @@ public enum AgentMarkers {
 
     static let environmentKeyBytes: [[UInt8]] = environmentKeys.map { Array($0.utf8) }
 
+    /// Which agent a process is, from its name, executable path and (for Node-hosted CLIs)
+    /// argv. Names alone are not enough: the native Claude Code binary lives at
+    /// `~/.local/share/claude/versions/<version>`, so the kernel names it "2.1.280".
+    public static func kind(name: String?, executablePath: String?, argv: [String] = []) -> AgentContext.Kind? {
+        if let name, let kind = ancestorNames[name] { return kind }
+        if let path = executablePath {
+            if path.contains("/claude/versions/") { return .claudeCode }
+            if let kind = ancestorNames[(path as NSString).lastPathComponent] { return kind }
+        }
+        // npm installs run under node: `node …/@anthropic-ai/claude-code/cli.js`, `node …/bin/codex`.
+        if let script = argv.dropFirst().first {
+            if script.contains("@anthropic-ai/claude-code") { return .claudeCode }
+            if script.contains("@openai/codex") { return .codex }
+        }
+        return nil
+    }
+
     /// Process names of agent CLIs, matched against ancestors while they are alive.
     public static let ancestorNames: [String: AgentContext.Kind] = [
         "claude": .claudeCode,

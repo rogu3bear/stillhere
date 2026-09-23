@@ -14,14 +14,14 @@ public enum AgentDetector {
         if var context = fromEnvironment(environment) {
             if let pid = context.launcherPID {
                 context.launcherAlive = isAlive(pid, startedBy: serverStart, lookup: lookup)
-            } else if let ancestor = ancestors.first(where: { kind(ofProcessNamed: $0.name) == context.kind }) {
+            } else if let ancestor = ancestors.first(where: { kind(of: $0) == context.kind }) {
                 context.launcherPID = ancestor.pid
                 context.launcherAlive = true
             }
             return context
         }
         for ancestor in ancestors {
-            if let kind = kind(ofProcessNamed: ancestor.name) {
+            if let kind = kind(of: ancestor) {
                 return AgentContext(kind: kind, evidence: .ancestry, launcherPID: ancestor.pid, launcherAlive: true)
             }
         }
@@ -57,9 +57,8 @@ public enum AgentDetector {
         }
     }
 
-    static func kind(ofProcessNamed name: String?) -> AgentContext.Kind? {
-        guard let name else { return nil }
-        return AgentMarkers.ancestorNames[name]
+    static func kind(of process: ProcessDetails) -> AgentContext.Kind? {
+        AgentMarkers.kind(name: process.name, executablePath: process.executablePath, argv: process.argv)
     }
 
     /// The launcher is alive when its PID exists and was started no later than the server;
