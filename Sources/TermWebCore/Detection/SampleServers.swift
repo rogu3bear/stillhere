@@ -8,12 +8,16 @@ public enum SampleServers {
     public static let vite = entry(
         port: 5173, pid: 41_001, name: "node", bindings: [Binding(family: .ipv6, address: .loopbackV6)],
         argv: ["/usr/local/bin/node", "/Users/dev/Projects/shop/node_modules/.bin/vite"],
-        project: "/Users/dev/Projects/shop", framework: FrameworkGuess(name: "Vite", source: .argv), age: 754
+        project: "/Users/dev/Projects/shop", framework: FrameworkGuess(name: "Vite", source: .argv), age: 754,
+        git: GitContext(checkoutRoot: "/Users/dev/Projects/shop", branch: "feat/cart"),
+        agent: AgentContext(kind: .claudeCode, evidence: .environment, sessionID: "sample-session", launcherPID: 40_900, launcherAlive: true)
     )
     public static let next = entry(
         port: 3000, pid: 41_020, name: "node", bindings: [Binding(family: .ipv6, address: .any)],
         argv: ["next-server (v15.0.0)"],
-        project: "/Users/dev/Projects/blog", framework: FrameworkGuess(name: "Next.js", source: .argv), age: 3_900
+        project: "/Users/dev/Projects/blog", framework: FrameworkGuess(name: "Next.js", source: .argv), age: 3_900,
+        git: GitContext(checkoutRoot: "/Users/dev/Projects/blog-wt", branch: "fix/rss", worktree: "blog-wt"),
+        agent: AgentContext(kind: .claudeCode, evidence: .environment, sessionID: "ended-session", launcherPID: 39_000, launcherAlive: false)
     )
     public static let flask = entry(
         port: 5000, pid: 41_100, name: "Python", bindings: [Binding(family: .ipv4, address: .any)],
@@ -63,7 +67,8 @@ public enum SampleServers {
 
     static func entry(
         port: Int, pid: Int32, workers: [Int32] = [], name: String, bindings: [Binding], argv: [String],
-        project: String?, framework: FrameworkGuess, age: TimeInterval, hidden: HiddenReason? = nil
+        project: String?, framework: FrameworkGuess, age: TimeInterval, hidden: HiddenReason? = nil,
+        git: GitContext? = nil, agent: AgentContext? = nil
     ) -> ServerEntry {
         let process = ProcessDetails(
             pid: pid, ppid: 1, uid: 501, name: name,
@@ -77,7 +82,8 @@ public enum SampleServers {
         }
         return ServerEntry(
             port: port, rootPID: pid, workerPIDs: workers, bindings: bindings, command: name,
-            process: process, project: location, framework: framework, hiddenReason: hidden
+            process: process, project: location, framework: framework, hiddenReason: hidden,
+            git: git, agent: agent
         )
     }
 }
