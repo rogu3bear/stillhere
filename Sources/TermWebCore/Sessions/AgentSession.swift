@@ -19,6 +19,8 @@ public struct AgentSession: Sendable, Hashable, Identifiable {
     public var parentSessionPID: Int32?
     /// The root and its descendants, excluding nested sessions.
     public var memberPIDs: Set<Int32>
+    /// Reviewers never collide; see `SessionRole`.
+    public var role: SessionRole
 
     public var id: Int32 { pid }
 
@@ -30,7 +32,8 @@ public struct AgentSession: Sendable, Hashable, Identifiable {
         ownCheckout: GitContext? = nil,
         checkouts: [GitContext] = [],
         parentSessionPID: Int32? = nil,
-        memberPIDs: Set<Int32> = []
+        memberPIDs: Set<Int32> = [],
+        role: SessionRole = .writer
     ) {
         self.pid = pid
         self.kind = kind
@@ -40,6 +43,7 @@ public struct AgentSession: Sendable, Hashable, Identifiable {
         self.checkouts = checkouts
         self.parentSessionPID = parentSessionPID
         self.memberPIDs = memberPIDs.union([pid])
+        self.role = role
     }
 
     /// Servers this session started: attributed to it by environment, or running under it.
@@ -54,7 +58,7 @@ public struct AgentSession: Sendable, Hashable, Identifiable {
     public static func == (lhs: AgentSession, rhs: AgentSession) -> Bool {
         lhs.pid == rhs.pid && lhs.kind == rhs.kind && lhs.startTime == rhs.startTime && lhs.cwd == rhs.cwd
             && lhs.ownCheckout == rhs.ownCheckout && lhs.checkouts == rhs.checkouts
-            && lhs.parentSessionPID == rhs.parentSessionPID
+            && lhs.parentSessionPID == rhs.parentSessionPID && lhs.role == rhs.role
     }
 
     public func hash(into hasher: inout Hasher) {

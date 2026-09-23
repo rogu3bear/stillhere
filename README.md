@@ -175,6 +175,14 @@ that server is still linked to the session in the menu. Sessions younger than 5
 seconds (one-shot `claude --version` and the like) don't count toward a
 collision. A dotfiles repo at `~` is ignored.
 
+**Roles.** Only *writers* collide. A session launched for review or with edits
+disabled is a **reviewer**: it is listed ("reviewing") but never counts toward a
+collision. term-web decides this only from explicit launch flags on the agent
+process: iTerm2's built-in code review (`--settings …/iTerm.app/Contents/Resources/code-review-settings.txt`),
+Claude Code's `--permission-mode plan` or `--disallowedTools` covering both Edit
+and Write, and Codex's `--sandbox read-only`. Everything else is a writer, so a
+real collision is never hidden by a guess.
+
 Limits: the Codex desktop app runs all its threads under one app server, so two
 Codex threads in one checkout look like one session and never collide with
 each other. Two sessions in one checkout are flagged whether or not both are
@@ -194,7 +202,9 @@ The git branch and worktree come from reading `.git/HEAD` (or a worktree's
   and `::1` on the ports it found. There is no telemetry. For HTTPS it accepts
   self-signed certificates, only for those loopback addresses.
 - From other processes' environments it reads only the agent markers listed
-  above. Command lines and environments never appear in `--json` or MCP output,
+  above. It reads the arguments of agent processes (and of `node`) only to tell
+  which agent they are and whether they are reviewers; the arguments, which can
+  contain prompts, are never stored or reported. Command lines and environments never appear in `--json` or MCP output,
   because they can carry tokens.
 - It has no entitlements and asks for no special permissions. It runs with the
   hardened runtime.

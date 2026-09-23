@@ -9,6 +9,10 @@ public struct SessionReport: Sendable, Hashable, Encodable {
     public var uptimeSeconds: Int
     public var checkouts: [GitContext]
     public var parentSessionPID: Int32?
+    /// "writer" or "reviewer".
+    public var role: String
+    /// Why a reviewer was classified as one; nil for writers.
+    public var roleReason: String?
     /// Ports of servers this session started.
     public var servers: [Int]
     /// Checkout roots this session shares with another independent session.
@@ -22,6 +26,8 @@ public struct SessionReport: Sendable, Hashable, Encodable {
         uptimeSeconds = max(0, Int(now.timeIntervalSince(session.startTime)))
         checkouts = session.checkouts
         parentSessionPID = session.parentSessionPID
+        role = session.role.label
+        if case .reviewer(let reason) = session.role { roleReason = reason } else { roleReason = nil }
         self.servers = Array(Set(servers.filter(session.owns).map(\.port))).sorted()
         collidesIn = collisions.filter { $0.sessionPIDs.contains(session.pid) }.map(\.checkout.checkoutRoot)
     }
@@ -35,12 +41,14 @@ public struct SessionReport: Sendable, Hashable, Encodable {
         try container.encode(uptimeSeconds, forKey: .uptimeSeconds)
         try container.encode(checkouts, forKey: .checkouts)
         try container.encode(parentSessionPID, forKey: .parentSessionPID)
+        try container.encode(role, forKey: .role)
+        try container.encode(roleReason, forKey: .roleReason)
         try container.encode(servers, forKey: .servers)
         try container.encode(collidesIn, forKey: .collidesIn)
     }
 
     private enum CodingKeys: String, CodingKey {
-        case pid, agent, kind, startedAt, uptimeSeconds, checkouts, parentSessionPID, servers, collidesIn
+        case pid, agent, kind, startedAt, uptimeSeconds, checkouts, parentSessionPID, role, roleReason, servers, collidesIn
     }
 }
 

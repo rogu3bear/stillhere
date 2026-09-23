@@ -8,13 +8,19 @@ public struct ProcessRecord: Sendable, Hashable {
     public var startTime: Date
     /// Set only when it identifies an agent (see `ProcessTable.snapshot`).
     public var agentKind: AgentContext.Kind?
+    /// For agent processes: writer or reviewer, derived from argv (argv itself is not kept).
+    public var role: SessionRole
 
-    public init(pid: Int32, ppid: Int32, name: String, startTime: Date, agentKind: AgentContext.Kind? = nil) {
+    public init(
+        pid: Int32, ppid: Int32, name: String, startTime: Date,
+        agentKind: AgentContext.Kind? = nil, role: SessionRole = .writer
+    ) {
         self.pid = pid
         self.ppid = ppid
         self.name = name
         self.startTime = startTime
         self.agentKind = agentKind ?? AgentMarkers.kind(name: name, executablePath: nil)
+        self.role = role
     }
 }
 
@@ -63,16 +69,23 @@ public struct ProcessTable: Sendable {
     }
 
     /// The current user's processes, straight from libproc (a few ms for ~1000 PIDs).
-    /// The executable path is read for every process; argv only for `node`, the one host
-    /// whose agents can't be told apart by path.
+    /// The executable path is read for every process; argv only for `node` (whose agents
+    /// can't be told apart by path) and for agent processes (to derive their role).
     public static func snapshot(uid: UInt32 = getuid()) -> ProcessTable {
         var records: [ProcessRecord] = []
         for pid in Libproc.allPIDs() {
             guard case .found(let info) = Libproc.bsdInfo(pid), info.uid == uid else { continue }
             let path = Libproc.executablePath(pid)
-            let argv = info.name == "node" ? Libproc.procArgs(pid).flatMap(ProcArgsParser.parse)?.argv ?? [] : []
-            let kind = AgentMarkers.kind(name: info.name, executablePath: path, argv: argv)
-            records.append(ProcessRecord(pid: pid, ppid: info.ppid, name: info.name, startTime: info.startTime, agentKind: kind))
+            var argv: [String]?
+            func loadArgv() -> [String] {
+                if argv == nil { argv = Libproc.procArgs(pid).flatMap(ProcArgsParser.parse)?.argv ?? [] }
+                return argv ?? []
+            }
+            let kind = AgentMarkers.kind(name: info.name, executablePath: path, argv: info.name == "node" ? loadArgv() : [])
+            let role = kind == nil ? SessionRole.writer : SessionRoleClassifier.role(argv: loadArgv())
+            records.append(ProcessRecord(
+                pid: pid, ppid: info.ppid, name: info.name, startTime: info.startTime, agentKind: kind, role: role
+            ))
         }
         return ProcessTable(records)
     }

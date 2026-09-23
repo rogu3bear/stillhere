@@ -81,7 +81,8 @@ public struct SessionScanner: Sendable {
                 ownCheckout: own,
                 checkouts: checkouts.sorted { $0.checkoutRoot < $1.checkoutRoot },
                 parentSessionPID: parent?.pid,
-                memberPIDs: Set(([root] + descendants).map(\.pid))
+                memberPIDs: Set(([root] + descendants).map(\.pid)),
+                role: root.role
             )
         }
     }
@@ -105,9 +106,9 @@ public struct SessionScanner: Sendable {
         return trimmed != "/" && trimmed != home
     }
 
-    /// Checkouts worked in by sessions from two or more independent lineages. Sessions
-    /// are independent when they share no ancestor session: a supervisor and its workers,
-    /// and workers of one supervisor, never collide with each other.
+    /// Checkouts worked in by writers from two or more independent lineages. Sessions are
+    /// independent when they share no ancestor session: a supervisor and its workers, and
+    /// workers of one supervisor, never collide with each other. Reviewers never collide.
     public static func collisions(
         _ sessions: [AgentSession],
         now: Date = Date(),
@@ -124,7 +125,7 @@ public struct SessionScanner: Sendable {
             return current
         }
         let eligible = sessions.filter {
-            $0.pid == alwaysEligible || now.timeIntervalSince($0.startTime) >= minimumAge
+            $0.role.isWriter && ($0.pid == alwaysEligible || now.timeIntervalSince($0.startTime) >= minimumAge)
         }
         var byCheckout: [String: (GitContext, [AgentSession])] = [:]
         for session in eligible {

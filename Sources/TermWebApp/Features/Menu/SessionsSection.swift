@@ -37,7 +37,7 @@ struct SessionRow: View {
         let colliding = !partners.isEmpty
         VStack(alignment: .leading, spacing: 1) {
             HStack(spacing: 6) {
-                Image(systemName: colliding ? "exclamationmark.triangle.fill" : "sparkles")
+                Image(systemName: colliding ? "exclamationmark.triangle.fill" : session.role.isWriter ? "sparkles" : "eye")
                     .foregroundStyle(colliding ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
                     .imageScale(.small)
                 Text(session.kind.displayName).font(.callout.weight(.medium))
@@ -78,7 +78,9 @@ struct SessionRow: View {
 
     private var detailText: String {
         var parts: [String] = []
-        if !partners.isEmpty {
+        if case .reviewer(let reason) = session.role {
+            parts.append("reviewing (\(reason))")
+        } else if !partners.isEmpty {
             parts.append("shared with PID " + partners.map(String.init).joined(separator: ", "))
         } else if let parent = session.parentSessionPID {
             parts.append("worker of PID \(parent)")

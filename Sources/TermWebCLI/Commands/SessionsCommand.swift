@@ -119,7 +119,8 @@ enum SessionTable {
     static func cells(_ report: SessionReport) -> [String] {
         let home = NSHomeDirectory()
         func short(_ path: String) -> String { path.hasPrefix(home) ? "~" + path.dropFirst(home.count) : path }
-        let agent = report.parentSessionPID.map { "\(report.agent) (worker of \($0))" } ?? report.agent
+        var agent = report.parentSessionPID.map { "\(report.agent) (worker of \($0))" } ?? report.agent
+        if let reason = report.roleReason { agent += " (\(reason))" }
         return [
             agent,
             String(report.pid),
