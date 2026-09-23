@@ -30,6 +30,18 @@ enum Libproc {
         return .found(BSDInfo(ppid: Int32(info.pbi_ppid), uid: info.pbi_uid, name: name, startTime: start))
     }
 
+    /// Every PID on the system (other users' included; callers filter by uid).
+    static func allPIDs() -> [Int32] {
+        let estimate = proc_listallpids(nil, 0)
+        guard estimate > 0 else { return [] }
+        var pids = [Int32](repeating: 0, count: Int(estimate) + 64)
+        let count = pids.withUnsafeMutableBytes { raw in
+            proc_listallpids(raw.baseAddress, Int32(raw.count))
+        }
+        guard count > 0 else { return [] }
+        return Array(pids.prefix(Int(count))).filter { $0 > 0 }
+    }
+
     static func currentDirectory(_ pid: Int32) -> String? {
         var info = proc_vnodepathinfo()
         let size = Int32(MemoryLayout<proc_vnodepathinfo>.size)
