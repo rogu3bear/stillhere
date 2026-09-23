@@ -84,10 +84,16 @@ public enum AgentMarkers {
             if path.contains("/claude/versions/") { return .claudeCode }
             if let kind = ancestorNames[(path as NSString).lastPathComponent] { return kind }
         }
-        // npm installs run under node: `node …/@anthropic-ai/claude-code/cli.js`, `node …/bin/codex`.
-        if let script = argv.dropFirst().first {
-            if script.contains("@anthropic-ai/claude-code") { return .claudeCode }
-            if script.contains("@openai/codex") { return .codex }
+        // npm installs run under node through a shebang: `node /opt/homebrew/bin/claude`,
+        // which links to `…/@anthropic-ai/claude-code/cli.js`. A CLI that rewrites its
+        // process title leaves only argv[0].
+        for argument in argv.prefix(2) {
+            if let kind = ancestorNames[(argument as NSString).lastPathComponent] { return kind }
+            let resolved = (argument as NSString).resolvingSymlinksInPath
+            if resolved.contains("@anthropic-ai/claude-code") || resolved.contains("@anthropic-ai/claude-agent-sdk") {
+                return .claudeCode
+            }
+            if resolved.contains("@openai/codex") { return .codex }
         }
         return nil
     }

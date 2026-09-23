@@ -49,9 +49,9 @@ public struct SessionOverview: Sendable, Hashable {
     public var sessions: [AgentSession]
     public var collisions: [SessionCollision]
 
-    public init(sessions: [AgentSession]) {
+    public init(sessions: [AgentSession], now: Date = Date(), caller: Int32? = nil) {
         self.sessions = sessions
-        collisions = SessionScanner.collisions(sessions)
+        collisions = SessionScanner.collisions(sessions, now: now, alwaysEligible: caller)
     }
 
     public static let empty = SessionOverview(sessions: [])

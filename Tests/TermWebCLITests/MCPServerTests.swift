@@ -133,6 +133,7 @@ struct GoneSignalSystem: SignalSystem {
         let web = GitContext(checkoutRoot: "/Users/dev/Projects/shop", branch: "feat/cart")
         let detector = FakeServerDetector()
         var tools = MCPTools(caller: nil, query: ServerQuery(detector: detector))
+        tools.callerSessionPID = { nil }
         tools.scanSessions = {
             [
                 AgentSession(pid: 40_900, kind: .claudeCode, startTime: .distantPast, checkouts: [web]),
@@ -148,6 +149,7 @@ struct GoneSignalSystem: SignalSystem {
         }
         #expect(sessions.first?["servers"] == [5173]) // SampleServers.vite's launcher is 40_900
         #expect(collisions.first?["sessionPIDs"] == [40_900, 50_000])
+        #expect(content?["caller_pid"] == .null)
     }
 
     @Test func toolDefinitionsDeclareObjectSchemasAndHints() {

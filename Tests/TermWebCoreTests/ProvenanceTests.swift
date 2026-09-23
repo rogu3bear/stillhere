@@ -86,6 +86,10 @@ import Testing
         #expect(AgentMarkers.kind(name: "node", executablePath: "/usr/local/bin/node",
                                   argv: ["node", "/usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js"]) == .claudeCode)
         #expect(AgentMarkers.kind(name: "node", executablePath: "/usr/local/bin/node", argv: ["node", "server.js"]) == nil)
+        // npm shebang install: argv[1] is the bin symlink; a retitled CLI keeps only argv[0].
+        #expect(AgentMarkers.kind(name: "node", executablePath: "/opt/homebrew/bin/node",
+                                  argv: ["node", "/opt/homebrew/bin/claude"]) == .claudeCode)
+        #expect(AgentMarkers.kind(name: "node", executablePath: "/opt/homebrew/bin/node", argv: ["codex"]) == .codex)
         #expect(AgentMarkers.kind(name: "2.1.280", executablePath: "/opt/app/versions/2.1.280") == nil)
     }
 

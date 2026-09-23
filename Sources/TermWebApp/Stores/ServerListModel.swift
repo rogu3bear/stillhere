@@ -166,7 +166,7 @@ final class ServerListModel {
     private func performScan() async {
         isRefreshing = true
         defer { isRefreshing = false }
-        let overview = SessionOverview(sessions: await sessionSource.sessions())
+        let overview = SessionOverview(sessions: await sessionSource.sessions(), now: clock.now)
         if overview != sessionOverview { sessionOverview = overview }
         do {
             let entries = try await detector.scan(config: settings.ignoreConfiguration)

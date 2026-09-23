@@ -16,13 +16,19 @@ import Testing
             in: ProcessTable(records),
             cwd: { cwds[$0] },
             checkout: { directory in
+                if directory.hasPrefix("/Users/me/dotfiles-home") { return GitContext(checkoutRoot: home, branch: "main") }
                 let parts = directory.split(separator: "/")
                 guard parts.count >= 4, parts[2] == "dev" else { return nil }
                 return GitContext(checkoutRoot: "/Users/me/dev/\(parts[3])", branch: "main")
             },
-            home: home
+            home: home,
+            now: now
         )
     }
+
+    /// Records start at t0 + pid seconds; "now" is shortly after, so every descendant is
+    /// recent unless a test says otherwise.
+    var now: Date { t0.addingTimeInterval(500) }
 
     @Test func twoIndependentTerminalSessionsInOneCheckoutCollide() {
         // The live shape: two iTerm tabs, each running claude in the same repo.
@@ -49,7 +55,8 @@ import Testing
         let found = sessions([
             record(111, 1, "claude"), record(113, 111, "claude"), record(121, 1, "codex"),
         ], cwds: [111: "/Users/me/dev/web", 113: "/Users/me/dev/web", 121: "/Users/me/dev/web"])
-        #expect(SessionScanner.collisions(found).map(\.sessionPIDs) == [[111, 121]])
+        // Every session in the checkout is listed, workers included.
+        #expect(SessionScanner.collisions(found).map(\.sessionPIDs) == [[111, 113, 121]])
     }
 
     @Test func appHostedAgentWorksInItsChildrensCheckouts() {
@@ -76,6 +83,53 @@ import Testing
         #expect(found.first?.isIdle == true)
         #expect(!SessionScanner.isWorkDirectory("/Users/me/", home: home))
         #expect(SessionScanner.isWorkDirectory("/Users/me/dev", home: home))
+    }
+
+    @Test func longLivedDescendantsDoNotPlaceASessionInTheirCheckout() {
+        // The live false positive: a Codex app server whose preview server and MCP helper
+        // were started hours ago in another repo.
+        let old = now.addingTimeInterval(-SessionScanner.recentWindow - 60)
+        let found = sessions([
+            record(201, 1, "codex"),
+            ProcessRecord(pid: 210, ppid: 201, name: "bun", startTime: old),
+            ProcessRecord(pid: 211, ppid: 201, name: "npm", startTime: old),
+            record(220, 201, "zsh"),
+        ], cwds: [201: "/", 210: "/Users/me/dev/token-bar", 211: "/Users/me/dev/token-bar", 220: "/Users/me/dev/api"])
+        #expect(found.first?.checkouts.map(\.checkoutRoot) == ["/Users/me/dev/api"])
+        #expect(found.first?.memberPIDs.contains(210) == true) // still linked for server ownership
+    }
+
+    @Test func aDotfilesRepoAtHomeIsNotACheckout() {
+        let found = sessions([record(111, 1, "claude"), record(121, 1, "claude")],
+                             cwds: [111: "/Users/me/dotfiles-home/a", 121: "/Users/me/dotfiles-home/b"])
+        #expect(found.allSatisfy { $0.isIdle })
+        #expect(SessionScanner.collisions(found).isEmpty)
+    }
+
+    @Test func workersOfOneSupervisorNeverCollideWhereverTheSupervisorIs() {
+        let found = sessions([
+            record(111, 1, "claude"), record(112, 111, "claude"), record(113, 111, "claude"),
+        ], cwds: [111: "/Users/me/dev/api", 112: "/Users/me/dev/web", 113: "/Users/me/dev/web"])
+        #expect(SessionScanner.collisions(found).isEmpty)
+    }
+
+    @Test func nodeWrapperAndItsNativeAgentAreOneSession() {
+        var wrapper = record(300, 1, "node")
+        wrapper.agentKind = .codex
+        let found = sessions([wrapper, record(301, 300, "codex")], cwds: [300: "/Users/me/dev/web", 301: "/Users/me/dev/web"])
+        #expect(found.map(\.pid) == [301])
+        #expect(found.first?.parentSessionPID == nil)
+    }
+
+    @Test func brandNewSessionsDoNotCollideUnlessTheyAreTheCaller() {
+        let web = GitContext(checkoutRoot: "/Users/me/dev/web")
+        let now = t0.addingTimeInterval(100)
+        let sessions = [
+            AgentSession(pid: 1, kind: .claudeCode, startTime: t0, checkouts: [web]),
+            AgentSession(pid: 2, kind: .claudeCode, startTime: now.addingTimeInterval(-1), checkouts: [web]),
+        ]
+        #expect(SessionScanner.collisions(sessions, now: now).isEmpty)
+        #expect(SessionScanner.collisions(sessions, now: now, alwaysEligible: 2).map(\.sessionPIDs) == [[1, 2]])
     }
 
     @Test func cyclicTablesTerminate() {

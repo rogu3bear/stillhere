@@ -27,9 +27,10 @@ struct SessionsCommand {
     }
 
     func run() async throws -> Int32 {
-        let overview = SessionOverview(sessions: SessionScanner().scan())
+        let caller = SessionScanner.callerSessionPID()
+        let overview = SessionOverview(sessions: SessionScanner().scan(), caller: caller)
         if check {
-            if let warning = Self.checkWarning(overview, callerPID: Self.callerSessionPID()) { output.line(warning) }
+            if let warning = Self.checkWarning(overview, callerPID: caller) { output.line(warning) }
             return 0 // never block the session
         }
         let servers = (try? await ServerQuery().entries(.init(includeHidden: true))) ?? []
@@ -56,15 +57,16 @@ struct SessionsCommand {
             + "(\(collision.checkout.headDescription)): PIDs \(pids)"
     }
 
-    /// The agent session this command runs under: the nearest agent-named ancestor.
-    static func callerSessionPID(table: ProcessTable = .snapshot()) -> Int32? {
-        table.ancestors(of: getpid()).first(where: SessionScanner.isAgentRoot)?.pid
-    }
-
     /// The hook's message: tells the agent who else is in its checkout, and what to do.
     static func checkWarning(_ overview: SessionOverview, callerPID: Int32?) -> String? {
-        guard let callerPID else { return nil }
-        let mine = overview.collisions.filter { $0.sessionPIDs.contains(callerPID) }
+        // Only the checkout the session itself was started in: that is what "this checkout"
+        // means to the agent reading the note, even when its children work elsewhere.
+        guard let callerPID,
+              let own = overview.sessions.first(where: { $0.pid == callerPID })?.ownCheckout
+        else { return nil }
+        let mine = overview.collisions.filter {
+            $0.sessionPIDs.contains(callerPID) && $0.checkout.checkoutRoot == own.checkoutRoot
+        }
         guard !mine.isEmpty else { return nil }
         let byPID = Dictionary(uniqueKeysWithValues: overview.sessions.map { ($0.pid, $0) })
         let lines = mine.map { collision -> String in

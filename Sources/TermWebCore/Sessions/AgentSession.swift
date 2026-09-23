@@ -9,8 +9,10 @@ public struct AgentSession: Sendable, Hashable, Identifiable {
     /// The agent process's own working directory ("/" for app-hosted agents like the
     /// Codex app server, whose threads work in child processes).
     public var cwd: String?
-    /// Checkouts touched by the session: its own cwd plus its descendants', excluding
-    /// nested agent sessions (they are sessions of their own).
+    /// The checkout of the session's own working directory.
+    public var ownCheckout: GitContext?
+    /// Checkouts the session is working in: its own, plus those of recently started
+    /// descendants (see `SessionScanner.recentWindow`), excluding nested sessions.
     public var checkouts: [GitContext]
     /// The agent session that started this one (a delegated worker), if any.
     public var parentSessionPID: Int32?
@@ -24,6 +26,7 @@ public struct AgentSession: Sendable, Hashable, Identifiable {
         kind: AgentContext.Kind,
         startTime: Date,
         cwd: String? = nil,
+        ownCheckout: GitContext? = nil,
         checkouts: [GitContext] = [],
         parentSessionPID: Int32? = nil,
         memberPIDs: Set<Int32> = []
@@ -32,6 +35,7 @@ public struct AgentSession: Sendable, Hashable, Identifiable {
         self.kind = kind
         self.startTime = startTime
         self.cwd = cwd
+        self.ownCheckout = ownCheckout ?? checkouts.first
         self.checkouts = checkouts
         self.parentSessionPID = parentSessionPID
         self.memberPIDs = memberPIDs.union([pid])
@@ -43,6 +47,19 @@ public struct AgentSession: Sendable, Hashable, Identifiable {
     }
 
     public var isIdle: Bool { checkouts.isEmpty }
+
+    // Equality leaves out `memberPIDs`: short-lived tool processes change it on nearly every
+    // scan, and nothing displayed depends on it directly.
+    public static func == (lhs: AgentSession, rhs: AgentSession) -> Bool {
+        lhs.pid == rhs.pid && lhs.kind == rhs.kind && lhs.startTime == rhs.startTime && lhs.cwd == rhs.cwd
+            && lhs.ownCheckout == rhs.ownCheckout && lhs.checkouts == rhs.checkouts
+            && lhs.parentSessionPID == rhs.parentSessionPID
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(pid)
+        hasher.combine(startTime)
+    }
 }
 
 /// Two or more independent sessions in one checkout. Sessions that started one another

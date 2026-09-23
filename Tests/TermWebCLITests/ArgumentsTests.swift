@@ -91,6 +91,16 @@ import TermWebCore
         #expect(warning?.contains("/Users/me/dev/web (main): Codex PID 121") == true)
         #expect(warning?.contains("ask whether to continue here, wait, or use a separate worktree") == true)
         #expect(SessionsCommand.checkWarning(overview(), callerPID: 131) == nil)
+
+        // A caller whose own checkout is elsewhere hears nothing about its children's.
+        let api = GitContext(checkoutRoot: "/Users/me/dev/api")
+        let web = GitContext(checkoutRoot: "/Users/me/dev/web", branch: "main")
+        let elsewhere = SessionOverview(sessions: [
+            AgentSession(pid: 111, kind: .claudeCode, startTime: t0, ownCheckout: api, checkouts: [api, web]),
+            AgentSession(pid: 121, kind: .codex, startTime: t0, checkouts: [web]),
+        ])
+        #expect(!elsewhere.collisions.isEmpty)
+        #expect(SessionsCommand.checkWarning(elsewhere, callerPID: 111) == nil)
         #expect(SessionsCommand.checkWarning(overview(), callerPID: nil) == nil)
     }
 

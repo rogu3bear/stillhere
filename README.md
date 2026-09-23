@@ -167,6 +167,19 @@ started them. App-hosted agents such as the Codex app server run at `/` and are
 placed by their child processes' working directories. Sessions that aren't in
 any checkout are hidden unless you pass `--all`.
 
+"Working in" is deliberately narrow, because a collision warning asks you to
+act. A session works in the checkout of its own working directory, plus those
+of descendants started in the last 10 minutes (the commands it is running now).
+A dev server or MCP helper it started hours ago in another repo doesn't count;
+that server is still linked to the session in the menu. Sessions younger than 5
+seconds (one-shot `claude --version` and the like) don't count toward a
+collision. A dotfiles repo at `~` is ignored.
+
+Limits: the Codex desktop app runs all its threads under one app server, so two
+Codex threads in one checkout look like one session and never collide with
+each other. Two sessions in one checkout are flagged whether or not both are
+editing: term-web can see where agents are, not what they will write.
+
 A server is **orphaned** only when its launcher PID is known (Claude Code's
 `CLAUDE_PID`) and that process has exited, or the PID now belongs to a process
 started after the server. Agents that don't expose a launcher PID are named but

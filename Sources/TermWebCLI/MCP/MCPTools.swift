@@ -11,6 +11,7 @@ struct MCPTools: Sendable {
     var maxWait: Double = 120
     /// Session discovery; injectable so tests never read the real process table.
     var scanSessions: @Sendable () -> [AgentSession] = { SessionScanner().scan() }
+    var callerSessionPID: @Sendable () -> Int32? = { SessionScanner.callerSessionPID() }
 
     static let definitions: [JSONValue] = [
         [
@@ -152,12 +153,15 @@ struct MCPTools: Sendable {
     }
 
     func sessions(_ arguments: JSONValue) async throws -> JSONValue {
-        let overview = SessionOverview(sessions: scanSessions())
+        let caller = callerSessionPID()
+        let overview = SessionOverview(sessions: scanSessions(), caller: caller)
         let servers = (try? await query.entries(.init(includeHidden: true))) ?? []
         let reports = overview.reports(servers: servers, includeIdle: arguments["include_idle"]?.boolValue ?? false)
         return try Self.toolResult([
             "sessions": JSONValue(encoding: reports),
             "collisions": JSONValue(encoding: overview.collisions.map(CollisionReport.init)),
+            // The session this MCP server serves, so an agent can find itself in the list.
+            "caller_pid": caller.map { .number(Double($0)) } ?? .null,
         ])
     }
 

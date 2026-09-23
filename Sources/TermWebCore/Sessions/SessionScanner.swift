@@ -2,11 +2,22 @@ import Foundation
 
 /// Finds agent sessions in a process table and the checkouts they work in. Pure given its
 /// inputs; `scan()` wires in libproc and `.git` reads.
+///
+/// "Working in" is deliberately narrow, because a collision warning asks the user to act:
+/// a session works in the checkout of its own working directory, plus the checkouts of
+/// descendants started within `recentWindow` (the commands it is running now). Long-lived
+/// descendants such as a dev server or an MCP helper started hours ago don't count; the
+/// menu still links servers to their session through `memberPIDs`.
 public struct SessionScanner: Sendable {
+    public static let recentWindow: TimeInterval = 10 * 60
+    /// Sessions younger than this don't count toward a collision (except the caller's own),
+    /// which ignores one-shot invocations such as `claude --version`.
+    public static let minimumCollisionAge: TimeInterval = 5
+
     public init() {}
 
     /// Live scan of the current user's processes.
-    public func scan(home: String = NSHomeDirectory()) -> [AgentSession] {
+    public func scan(home: String = NSHomeDirectory(), now: Date = Date()) -> [AgentSession] {
         var gitCache: [String: GitContext?] = [:]
         return Self.sessions(
             in: .snapshot(),
@@ -17,7 +28,8 @@ public struct SessionScanner: Sendable {
                 gitCache[directory] = context
                 return context
             },
-            home: home
+            home: home,
+            now: now
         )
     }
 
@@ -25,23 +37,40 @@ public struct SessionScanner: Sendable {
         record.agentKind != nil
     }
 
+    /// The agent session a process runs under: its nearest agent ancestor.
+    public static func callerSessionPID(of pid: Int32 = getpid(), in table: ProcessTable = .snapshot()) -> Int32? {
+        table.ancestors(of: pid).first(where: isAgentRoot)?.pid
+    }
+
     public static func sessions(
         in table: ProcessTable,
         cwd: (Int32) -> String?,
         checkout: (String) -> GitContext?,
-        home: String
+        home: String,
+        now: Date
     ) -> [AgentSession] {
         let roots = table.records.values.filter(isAgentRoot).sorted { $0.pid < $1.pid }
-        let rootPIDs = Set(roots.map(\.pid))
-        return roots.map { root in
-            let parent = table.ancestors(of: root.pid).first { rootPIDs.contains($0.pid) }
-            let members = [root] + table.descendants(of: root.pid, stopAt: isAgentRoot)
-            var seen: Set<String> = []
-            var checkouts: [GitContext] = []
-            for member in members {
-                guard let directory = cwd(member.pid), isWorkDirectory(directory, home: home),
-                      let context = checkout(directory), seen.insert(context.checkoutRoot).inserted
-                else { continue }
+        let wrappers = launcherWrappers(roots, in: table)
+        let sessionPIDs = Set(roots.map(\.pid)).subtracting(wrappers)
+        let homeRoot = URL(fileURLWithPath: home, isDirectory: true).standardized.path
+
+        func workCheckout(_ pid: Int32) -> GitContext? {
+            guard let directory = cwd(pid), isWorkDirectory(directory, home: home),
+                  let context = checkout(directory),
+                  // A dotfiles repo at ~ would otherwise claim every folder beneath it.
+                  URL(fileURLWithPath: context.checkoutRoot, isDirectory: true).standardized.path != homeRoot
+            else { return nil }
+            return context
+        }
+
+        return roots.filter { sessionPIDs.contains($0.pid) }.map { root in
+            let parent = table.ancestors(of: root.pid).first { sessionPIDs.contains($0.pid) }
+            let descendants = table.descendants(of: root.pid) { sessionPIDs.contains($0.pid) }
+            let own = workCheckout(root.pid)
+            var checkouts = own.map { [$0] } ?? []
+            var seen = Set(checkouts.map(\.checkoutRoot))
+            for member in descendants where now.timeIntervalSince(member.startTime) <= recentWindow {
+                guard let context = workCheckout(member.pid), seen.insert(context.checkoutRoot).inserted else { continue }
                 checkouts.append(context)
             }
             return AgentSession(
@@ -49,11 +78,25 @@ public struct SessionScanner: Sendable {
                 kind: root.agentKind ?? .other(root.name),
                 startTime: root.startTime,
                 cwd: cwd(root.pid),
+                ownCheckout: own,
                 checkouts: checkouts.sorted { $0.checkoutRoot < $1.checkoutRoot },
                 parentSessionPID: parent?.pid,
-                memberPIDs: Set(members.map(\.pid))
+                memberPIDs: Set(([root] + descendants).map(\.pid))
             )
         }
+    }
+
+    /// `node …/codex.js` launching the native `codex` binary is one session, not two: a
+    /// node-hosted root whose only agent child has the same kind is dropped as a wrapper.
+    static func launcherWrappers(_ roots: [ProcessRecord], in table: ProcessTable) -> Set<Int32> {
+        var wrappers: Set<Int32> = []
+        for root in roots where root.name == "node" {
+            let agentChildren = roots.filter {
+                $0.pid != root.pid && table.ancestors(of: $0.pid).first(where: isAgentRoot)?.pid == root.pid
+            }
+            if agentChildren.count == 1, agentChildren[0].agentKind == root.agentKind { wrappers.insert(root.pid) }
+        }
+        return wrappers
     }
 
     /// "/" and the home directory itself say nothing about which project an agent is in.
@@ -62,28 +105,36 @@ public struct SessionScanner: Sendable {
         return trimmed != "/" && trimmed != home
     }
 
-    /// Checkouts with two or more sessions, none of which started another of them.
-    public static func collisions(_ sessions: [AgentSession]) -> [SessionCollision] {
+    /// Checkouts worked in by sessions from two or more independent lineages. Sessions
+    /// are independent when they share no ancestor session: a supervisor and its workers,
+    /// and workers of one supervisor, never collide with each other.
+    public static func collisions(
+        _ sessions: [AgentSession],
+        now: Date = Date(),
+        minimumAge: TimeInterval = minimumCollisionAge,
+        alwaysEligible: Int32? = nil
+    ) -> [SessionCollision] {
         let byPID = Dictionary(uniqueKeysWithValues: sessions.map { ($0.pid, $0) })
-        func lineage(_ session: AgentSession) -> Set<Int32> {
-            var result: Set<Int32> = [session.pid]
-            var next = session.parentSessionPID
-            while let pid = next, result.insert(pid).inserted { next = byPID[pid]?.parentSessionPID }
-            return result
+        func lineageRoot(_ session: AgentSession) -> Int32 {
+            var current = session.pid
+            var seen: Set<Int32> = [current]
+            while let parent = byPID[current]?.parentSessionPID, byPID[parent] != nil, seen.insert(parent).inserted {
+                current = parent
+            }
+            return current
+        }
+        let eligible = sessions.filter {
+            $0.pid == alwaysEligible || now.timeIntervalSince($0.startTime) >= minimumAge
         }
         var byCheckout: [String: (GitContext, [AgentSession])] = [:]
-        for session in sessions {
+        for session in eligible {
             for checkout in session.checkouts {
                 byCheckout[checkout.checkoutRoot, default: (checkout, [])].1.append(session)
             }
         }
         return byCheckout.values.compactMap { checkout, members in
-            // Keep only sessions with no ancestor session in the same checkout.
-            let independent = members.filter { member in
-                !members.contains { other in other.pid != member.pid && lineage(member).contains(other.pid) }
-            }
-            guard independent.count > 1 else { return nil }
-            return SessionCollision(checkout: checkout, sessionPIDs: independent.map(\.pid).sorted())
+            guard Set(members.map(lineageRoot)).count > 1 else { return nil }
+            return SessionCollision(checkout: checkout, sessionPIDs: members.map(\.pid).sorted())
         }
         .sorted { $0.checkout.checkoutRoot < $1.checkout.checkoutRoot }
     }
