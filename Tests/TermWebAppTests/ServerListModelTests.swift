@@ -18,6 +18,12 @@ import TermWebCore
         #expect(model.lastRefreshed == SampleServers.referenceDate)
     }
 
+    @Test func orphansAreCountedAmongVisibleServersOnly() async {
+        let model = ServerListModel.make(FakeServerDetector(), defaults: temp)
+        await model.refresh(.manual)
+        #expect(model.orphanCount == 1) // SampleServers.next: its Claude Code session ended
+    }
+
     @Test func showHiddenDoesNotChangeTheCount() async {
         let model = ServerListModel.make(FakeServerDetector(), defaults: temp)
         model.settings.showHiddenServers = true

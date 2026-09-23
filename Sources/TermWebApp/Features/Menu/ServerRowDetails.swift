@@ -23,6 +23,20 @@ struct ServerRowDetails: View {
                     Text("Unknown").foregroundStyle(.secondary)
                 }
             }
+            if let git = entry.git {
+                row("Branch") {
+                    Text(git.worktree.map { "\(git.headDescription) · worktree \($0)" } ?? git.headDescription)
+                        .textSelection(.enabled)
+                        .help(git.checkoutRoot)
+                }
+            }
+            if let agent = entry.agent {
+                row("Agent") {
+                    Text(agentText(agent))
+                        .foregroundStyle(agent.isOrphaned ? AnyShapeStyle(.orange) : AnyShapeStyle(.primary))
+                        .textSelection(.enabled)
+                }
+            }
             row("Uptime") {
                 if let start = entry.process?.startTime {
                     TimelineView(.periodic(from: .now, by: 1)) { context in
@@ -57,6 +71,17 @@ struct ServerRowDetails: View {
                 .lineLimit(2)
                 .truncationMode(.middle)
         }
+    }
+
+    private func agentText(_ agent: AgentContext) -> String {
+        var parts = [agent.kind.displayName]
+        if let session = agent.sessionID { parts.append("session \(session.prefix(8))") }
+        switch agent.launcherAlive {
+        case true?: parts.append("running")
+        case false?: parts.append("session ended")
+        case nil: break
+        }
+        return parts.joined(separator: " · ")
     }
 
     private var processText: String {

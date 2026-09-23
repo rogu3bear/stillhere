@@ -59,11 +59,12 @@ struct ServerRow: View {
                 Spacer(minLength: 4)
                 StatusPill(probe: probe, hiddenReason: entry.hiddenReason)
             }
-            Text(subtitle)
+            subtitle
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .truncationMode(.middle)
+                .help(agentHelp)
             if let title = probe?.title, !title.isEmpty {
                 Text(title)
                     .font(.caption)
@@ -74,11 +75,27 @@ struct ServerRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var subtitle: String {
-        var parts: [String] = []
-        if let project = entry.project { parts.append(project.displayName) }
-        parts.append("\(entry.processName) \(entry.rootPID)")
-        if let uptime = entry.uptime(at: model.now()) { parts.append(UptimeFormatter.string(from: uptime)) }
-        return parts.joined(separator: " · ")
+    /// Project · branch · agent · process · uptime; the agent turns orange once orphaned.
+    private var subtitle: Text {
+        var leading: [String] = []
+        if let project = entry.project { leading.append(project.displayName) }
+        if let git = entry.git { leading.append(git.worktree == nil ? git.headDescription : "\(git.headDescription) (worktree)") }
+        var trailing = ["\(entry.processName) \(entry.rootPID)"]
+        if let uptime = entry.uptime(at: model.now()) { trailing.append(UptimeFormatter.string(from: uptime)) }
+
+        guard let agent = entry.agent else { return Text((leading + trailing).joined(separator: " · ")) }
+        let agentText = agent.isOrphaned
+            ? Text("\(agent.kind.displayName) · orphaned").foregroundStyle(.orange)
+            : Text(agent.kind.displayName)
+        let before = leading.isEmpty ? Text("") : Text(leading.joined(separator: " · ") + " · ")
+        return before + agentText + Text(" · " + trailing.joined(separator: " · "))
+    }
+
+    private var agentHelp: String {
+        guard let agent = entry.agent else { return "" }
+        let name = agent.kind.displayName
+        return agent.isOrphaned
+            ? "Started by \(name); that session has ended, so nothing will stop this server for you."
+            : "Started by \(name)."
     }
 }

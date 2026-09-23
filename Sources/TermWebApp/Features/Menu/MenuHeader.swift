@@ -10,6 +10,12 @@ struct MenuHeader: View {
             HStack(spacing: 8) {
                 Text(title)
                     .font(.headline)
+                if model.orphanCount > 0 {
+                    Text("\(model.orphanCount) orphaned")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.orange)
+                        .help("Started by coding agent sessions that have ended")
+                }
                 if !settings.showHiddenServers, !model.hiddenServers.isEmpty {
                     Text("\(model.hiddenServers.count) hidden")
                         .font(.caption)

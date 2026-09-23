@@ -16,16 +16,19 @@ struct GeneralSettingsTab: View {
                 }
                 Toggle("Show hidden servers", isOn: $settings.showHiddenServers)
                 Toggle("Check HTTP status and page title", isOn: $settings.probeHTTP)
+            } footer: {
+                Text("Status checks send one GET to 127.0.0.1 or [::1] while the menu is open. Nothing leaves this Mac.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 Picker("Open folders in", selection: $settings.terminalBundleID) {
                     Text("Automatic (\(TerminalApp.resolve(preferred: nil).name))").tag(String?.none)
                     ForEach(TerminalApp.installed) { terminal in
                         Text(terminal.name).tag(Optional(terminal.bundleID))
                     }
                 }
-            } footer: {
-                Text("Status checks send one GET to 127.0.0.1 or [::1] while the menu is open. Nothing leaves this Mac.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
 
             Section {

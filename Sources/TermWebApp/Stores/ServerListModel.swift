@@ -56,6 +56,8 @@ final class ServerListModel {
     var hiddenServers: [ServerEntry] { servers.filter(\.isHidden) }
     /// The menu bar count: visible servers, whether or not hidden ones are shown.
     var visibleCount: Int { servers.count { !$0.isHidden } }
+    /// Visible servers whose launching agent session has ended.
+    var orphanCount: Int { servers.count { !$0.isHidden && $0.agent?.isOrphaned == true } }
 
     /// The probe for this exact process, if one has been taken.
     func probe(for entry: ServerEntry) -> ProbeResult? {
