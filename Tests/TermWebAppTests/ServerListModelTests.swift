@@ -38,6 +38,19 @@ import TermWebCore
         #expect(model.servers.filter(SampleSessions.claude.owns).map(\.port) == [5173])
     }
 
+    @Test func brandNewSessionsAreNotListed() async {
+        let fresh = AgentSession(pid: 99, kind: .claudeCode, startTime: SampleServers.referenceDate.addingTimeInterval(-1))
+        let model = ServerListModel(
+            detector: FakeServerDetector(),
+            sessionSource: FakeSessionSource([SampleSessions.claude, fresh]),
+            settings: SettingsStore(defaults: temp.defaults),
+            signaller: ProcessSignaller(system: InertSignalSystem()),
+            clock: FixedNow(SampleServers.referenceDate)
+        )
+        await model.refresh(.manual)
+        #expect(model.sessionOverview.sessions.map(\.pid) == [40_900])
+    }
+
     @Test func showHiddenDoesNotChangeTheCount() async {
         let model = ServerListModel.make(FakeServerDetector(), defaults: temp)
         model.settings.showHiddenServers = true
