@@ -100,7 +100,9 @@ Tools:
   use this after starting a dev server instead of sleeping
 - `stop_server` (`port`, `pid`, `force`, `any_owner`): by default an agent can
   stop only the servers **its own session** started, so it can't stop your
-  servers or another agent's unless it passes `any_owner` (after asking you)
+  servers or another agent's unless it passes `any_owner` (after asking you).
+  "Its own" matches the session ID or the running Claude Code process, so
+  ownership survives `/clear` and resume.
 
 The server speaks both MCP eras: the stateless 2026-07-28 revision
 (per-request `_meta`, `server/discover`) and the `initialize` handshake of
