@@ -57,7 +57,8 @@ struct SessionsCommand {
             + "(\(collision.checkout.headDescription)): PIDs \(pids)"
     }
 
-    /// The hook's message: tells the agent who else is in its checkout, and what to do.
+    /// The hook's message: tells the agent who else is in its checkout, and what to do. The
+    /// hook runs again on every resume, so a decision the user already gave stands.
     static func checkWarning(_ overview: SessionOverview, callerPID: Int32?) -> String? {
         // Only the checkout the session itself was started in: that is what "this checkout"
         // means to the agent reading the note, even when its children work elsewhere.
@@ -78,7 +79,7 @@ struct SessionsCommand {
         return """
         term-web: another coding-agent session is already working in this checkout.
         \(lines.joined(separator: "\n"))
-        Two sessions editing one working tree can overwrite each other's changes. Before editing files, tell the user and ask whether to continue here, wait, or use a separate worktree.
+        Two sessions editing one working tree can overwrite each other's changes. Unless the user has already told you how to proceed, tell them before editing files and ask whether to continue here or wait for the other session to finish.
         """
     }
 }

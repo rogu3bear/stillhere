@@ -139,8 +139,10 @@ project's `.claude/settings.json`):
 
 When another independent agent session is already working in the new
 session's checkout, the hook adds a note to the new session's context naming
-that session and asking the agent to check with you before editing files. It
-prints nothing otherwise and always exits 0, so it never blocks a session.
+that session and asking the agent to check with you before editing files. The
+hook runs again when a session is resumed, so the note asks only if you haven't
+already told the agent how to proceed. It prints nothing otherwise and always
+exits 0, so it never blocks a session.
 
 ## How agent tracing works
 
@@ -163,9 +165,11 @@ version), or, for npm installs running under `node`, by the script in argv.
 **Sessions** are those agent processes themselves. A session's checkouts are
 the git checkouts that it and its descendant processes work in. Nested agent
 processes are sessions of their own, recorded as workers of the session that
-started them. App-hosted agents such as the Codex app server run at `/` and are
-placed by their child processes' working directories. Sessions that aren't in
-any checkout are hidden unless you pass `--all`.
+started them. App-hosted agents such as the Codex app server (`codex app-server`)
+are placed only by their child processes' working directories. Their own is
+wherever their host launched them: `/` for the desktop app, or the folder CCodex
+was started from. Sessions that aren't in any checkout are hidden unless you
+pass `--all`.
 
 "Working in" is deliberately narrow, because a collision warning asks you to
 act. A session works in the checkout of its own working directory, plus those

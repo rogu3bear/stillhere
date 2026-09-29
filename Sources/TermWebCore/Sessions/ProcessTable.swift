@@ -12,10 +12,14 @@ public struct ProcessRecord: Sendable, Hashable {
     public var role: SessionRole
     /// The outermost `.app` bundle holding the executable, such as `/Applications/ChatGPT.app`.
     public var appBundle: String?
+    /// For agent processes: launched as an app server (`codex app-server`), which hosts threads
+    /// for a desktop app, IDE or bridge. Derived from argv (argv itself is not kept).
+    public var isAppServer: Bool
 
     public init(
         pid: Int32, ppid: Int32, name: String, startTime: Date,
-        agentKind: AgentContext.Kind? = nil, role: SessionRole = .writer, appBundle: String? = nil
+        agentKind: AgentContext.Kind? = nil, role: SessionRole = .writer, appBundle: String? = nil,
+        isAppServer: Bool = false
     ) {
         self.pid = pid
         self.ppid = ppid
@@ -24,6 +28,7 @@ public struct ProcessRecord: Sendable, Hashable {
         self.agentKind = agentKind ?? AgentMarkers.kind(name: name, executablePath: nil)
         self.role = role
         self.appBundle = appBundle
+        self.isAppServer = isAppServer
     }
 
     /// `/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/…/codex` is in
@@ -31,6 +36,12 @@ public struct ProcessRecord: Sendable, Hashable {
     public static func appBundle(containing executablePath: String) -> String? {
         guard let range = executablePath.range(of: ".app/") else { return nil }
         return String(executablePath[..<executablePath.index(before: range.upperBound)])
+    }
+
+    /// The `app-server` subcommand, wherever global flags put it (`codex -c k=v app-server`).
+    /// Only the exact argument counts: a prompt mentioning an app server is one longer string.
+    public static func isAppServer(argv: [String]) -> Bool {
+        argv.dropFirst().contains("app-server")
     }
 }
 
@@ -80,7 +91,8 @@ public struct ProcessTable: Sendable {
 
     /// The current user's processes, straight from libproc (a few ms for ~1000 PIDs).
     /// The executable path is read for every process; argv only for `node` (whose agents
-    /// can't be told apart by path) and for agent processes (to derive their role).
+    /// can't be told apart by path) and for agent processes (to derive their role and
+    /// whether they are an app server).
     public static func snapshot(uid: UInt32 = getuid()) -> ProcessTable {
         var records: [ProcessRecord] = []
         for pid in Libproc.allPIDs() {
@@ -95,7 +107,8 @@ public struct ProcessTable: Sendable {
             let role = kind == nil ? SessionRole.writer : SessionRoleClassifier.role(argv: loadArgv())
             records.append(ProcessRecord(
                 pid: pid, ppid: info.ppid, name: info.name, startTime: info.startTime, agentKind: kind, role: role,
-                appBundle: path.flatMap(ProcessRecord.appBundle(containing:))
+                appBundle: path.flatMap(ProcessRecord.appBundle(containing:)),
+                isAppServer: kind != nil && ProcessRecord.isAppServer(argv: loadArgv())
             ))
         }
         return ProcessTable(records)

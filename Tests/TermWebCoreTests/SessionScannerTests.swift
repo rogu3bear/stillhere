@@ -105,21 +105,58 @@ import Testing
         let chatGPT = "/Applications/ChatGPT.app"
         let found = sessions([
             record(100, 1, "node"),
-            ProcessRecord(pid: 201, ppid: 100, name: "codex", startTime: t0, appBundle: chatGPT),
+            ProcessRecord(pid: 201, ppid: 100, name: "codex", startTime: t0, appBundle: chatGPT, isAppServer: true),
             ProcessRecord(pid: 202, ppid: 201, name: "node_repl", startTime: now, appBundle: chatGPT),
             record(110, 100, "claude"),
         ], cwds: [100: "/Users/me/dev/bridge", 201: "/Users/me/dev/bridge", 202: "/Users/me/dev/web", 110: "/Users/me/dev/web"])
-        #expect(found.first { $0.pid == 201 }?.checkouts.map(\.checkoutRoot) == ["/Users/me/dev/bridge"])
+        #expect(found.first { $0.pid == 201 }?.checkouts.isEmpty == true)
         #expect(SessionScanner.collisions(found, now: now).isEmpty)
 
         // A command the app server runs there still places it.
         let working = sessions([
-            ProcessRecord(pid: 201, ppid: 1, name: "codex", startTime: t0, appBundle: chatGPT),
+            ProcessRecord(pid: 201, ppid: 1, name: "codex", startTime: t0, appBundle: chatGPT, isAppServer: true),
             ProcessRecord(pid: 202, ppid: 201, name: "node_repl", startTime: now, appBundle: chatGPT),
             record(203, 201, "zsh"),
             record(110, 1, "claude"),
         ], cwds: [202: "/Users/me/dev/web", 203: "/Users/me/dev/web", 110: "/Users/me/dev/web"])
         #expect(SessionScanner.collisions(working, now: now).map(\.sessionPIDs) == [[110, 201]])
+    }
+
+    @Test func anAppServersOwnDirectoryDoesNotPlaceIt() {
+        // The live false positive: CCodex, started in its own repo, launches the Codex app
+        // server there, so every Claude thread opened in that repo "collided" with it.
+        let found = sessions([
+            record(100, 1, "node"),
+            ProcessRecord(pid: 201, ppid: 100, name: "codex", startTime: t0, isAppServer: true),
+            record(110, 100, "claude"),
+        ], cwds: [100: "/Users/me/dev/bridge", 201: "/Users/me/dev/bridge", 110: "/Users/me/dev/bridge"])
+        let server = found.first { $0.pid == 201 }
+        #expect(server?.checkouts.isEmpty == true)
+        #expect(server?.ownCheckout == nil)
+        #expect(server?.cwd == "/Users/me/dev/bridge") // still reported
+        #expect(found.first { $0.pid == 110 }?.checkouts.map(\.checkoutRoot) == ["/Users/me/dev/bridge"])
+        #expect(SessionScanner.collisions(found, now: now).isEmpty)
+
+        // A command it runs there still places it.
+        let working = sessions([
+            ProcessRecord(pid: 201, ppid: 1, name: "codex", startTime: t0, isAppServer: true),
+            record(203, 201, "zsh"),
+            record(110, 1, "claude"),
+        ], cwds: [201: "/Users/me/dev/bridge", 203: "/Users/me/dev/bridge", 110: "/Users/me/dev/bridge"])
+        #expect(SessionScanner.collisions(working, now: now).map(\.sessionPIDs) == [[110, 201]])
+
+        // A Codex CLI session started in a repo works there, as any terminal agent does.
+        let terminal = sessions([record(301, 1, "codex"), record(110, 1, "claude")],
+                                cwds: [301: "/Users/me/dev/bridge", 110: "/Users/me/dev/bridge"])
+        #expect(SessionScanner.collisions(terminal, now: now).map(\.sessionPIDs) == [[110, 301]])
+    }
+
+    @Test func appServerIsTheExactSubcommand() {
+        #expect(ProcessRecord.isAppServer(argv: ["codex", "app-server", "--listen", "unix://"]))
+        #expect(ProcessRecord.isAppServer(argv: ["codex", "-c", "model=o3", "app-server"]))
+        #expect(!ProcessRecord.isAppServer(argv: ["codex", "exec", "restart the app-server"]))
+        #expect(!ProcessRecord.isAppServer(argv: ["app-server"])) // argv[0] is the program
+        #expect(!ProcessRecord.isAppServer(argv: ["claude", "--resume"]))
     }
 
     @Test func appBundleIsTheOutermostBundle() {

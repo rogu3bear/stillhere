@@ -10,6 +10,10 @@ import Foundation
 /// menu still links servers to their session through `memberPIDs`. Neither do helpers
 /// shipped in the agent's own app bundle: the Codex app server starts a REPL in each
 /// thread's directory, including threads CCodex hands to Claude Code.
+///
+/// An app server (`codex app-server`) is placed only by those descendants, never by its own
+/// working directory: that is wherever its host launched it (`/` for the desktop app, the
+/// folder CCodex was started from), not where any thread works.
 public struct SessionScanner: Sendable {
     public static let recentWindow: TimeInterval = 10 * 60
     /// Sessions younger than this don't count toward a collision (except the caller's own),
@@ -68,7 +72,7 @@ public struct SessionScanner: Sendable {
         return roots.filter { sessionPIDs.contains($0.pid) }.map { root in
             let parent = table.ancestors(of: root.pid).first { sessionPIDs.contains($0.pid) }
             let descendants = table.descendants(of: root.pid) { sessionPIDs.contains($0.pid) }
-            let own = workCheckout(root.pid)
+            let own = root.isAppServer ? nil : workCheckout(root.pid)
             var checkouts = own.map { [$0] } ?? []
             var seen = Set(checkouts.map(\.checkoutRoot))
             for member in descendants where now.timeIntervalSince(member.startTime) <= recentWindow {

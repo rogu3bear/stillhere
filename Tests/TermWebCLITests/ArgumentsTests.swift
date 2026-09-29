@@ -89,7 +89,9 @@ import TermWebCore
     @Test func warnsOnlyTheSessionsInACollision() {
         let warning = SessionsCommand.checkWarning(overview(), callerPID: 111)
         #expect(warning?.contains("/Users/me/dev/web (main): Codex PID 121") == true)
-        #expect(warning?.contains("ask whether to continue here, wait, or use a separate worktree") == true)
+        #expect(warning?.contains("Unless the user has already told you how to proceed") == true)
+        #expect(warning?.contains("ask whether to continue here or wait for the other session to finish") == true)
+        #expect(warning?.contains("worktree") == false)
         #expect(SessionsCommand.checkWarning(overview(), callerPID: 131) == nil)
 
         // A caller whose own checkout is elsewhere hears nothing about its children's.

@@ -6,11 +6,12 @@ public struct AgentSession: Sendable, Hashable, Identifiable {
     public var pid: Int32
     public var kind: AgentContext.Kind
     public var startTime: Date
-    /// The agent process's own working directory ("/" for app-hosted agents like the
-    /// Codex app server, whose threads work in child processes).
+    /// The agent process's own working directory. For an app server (the Codex app server,
+    /// whose threads work in child processes) it is wherever its host launched it.
     public var cwd: String?
     /// The checkout of the session's own working directory; nil when that directory is /,
-    /// home or not in a checkout, even if descendants work in one.
+    /// home or not in a checkout, or the session is an app server, even if descendants
+    /// work in one.
     public var ownCheckout: GitContext?
     /// Checkouts the session is working in: its own, plus those of recently started
     /// descendants (see `SessionScanner.recentWindow`), excluding nested sessions.
