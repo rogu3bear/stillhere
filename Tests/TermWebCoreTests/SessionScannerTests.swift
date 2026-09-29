@@ -99,6 +99,36 @@ import Testing
         #expect(found.first?.memberPIDs.contains(210) == true) // still linked for server ownership
     }
 
+    @Test func helpersFromTheAgentsOwnAppBundleDoNotPlaceIt() {
+        // The live false positive: CCodex (node) runs Claude Code threads beside a stock
+        // Codex app server, which starts ChatGPT.app's node_repl in each thread's directory.
+        let chatGPT = "/Applications/ChatGPT.app"
+        let found = sessions([
+            record(100, 1, "node"),
+            ProcessRecord(pid: 201, ppid: 100, name: "codex", startTime: t0, appBundle: chatGPT),
+            ProcessRecord(pid: 202, ppid: 201, name: "node_repl", startTime: now, appBundle: chatGPT),
+            record(110, 100, "claude"),
+        ], cwds: [100: "/Users/me/dev/bridge", 201: "/Users/me/dev/bridge", 202: "/Users/me/dev/web", 110: "/Users/me/dev/web"])
+        #expect(found.first { $0.pid == 201 }?.checkouts.map(\.checkoutRoot) == ["/Users/me/dev/bridge"])
+        #expect(SessionScanner.collisions(found, now: now).isEmpty)
+
+        // A command the app server runs there still places it.
+        let working = sessions([
+            ProcessRecord(pid: 201, ppid: 1, name: "codex", startTime: t0, appBundle: chatGPT),
+            ProcessRecord(pid: 202, ppid: 201, name: "node_repl", startTime: now, appBundle: chatGPT),
+            record(203, 201, "zsh"),
+            record(110, 1, "claude"),
+        ], cwds: [202: "/Users/me/dev/web", 203: "/Users/me/dev/web", 110: "/Users/me/dev/web"])
+        #expect(SessionScanner.collisions(working, now: now).map(\.sessionPIDs) == [[110, 201]])
+    }
+
+    @Test func appBundleIsTheOutermostBundle() {
+        #expect(ProcessRecord.appBundle(containing: "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex") == "/Applications/ChatGPT.app")
+        #expect(ProcessRecord.appBundle(containing: "/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node_repl") == "/Applications/ChatGPT.app")
+        #expect(ProcessRecord.appBundle(containing: "/Users/me/.local/share/claude/versions/2.1.280") == nil)
+        #expect(ProcessRecord.appBundle(containing: "/opt/homebrew/bin/node.app-helper") == nil)
+    }
+
     @Test func aDotfilesRepoAtHomeIsNotACheckout() {
         let found = sessions([record(111, 1, "claude"), record(121, 1, "claude")],
                              cwds: [111: "/Users/me/dotfiles-home/a", 121: "/Users/me/dotfiles-home/b"])

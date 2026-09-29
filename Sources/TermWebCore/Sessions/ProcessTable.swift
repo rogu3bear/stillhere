@@ -10,10 +10,12 @@ public struct ProcessRecord: Sendable, Hashable {
     public var agentKind: AgentContext.Kind?
     /// For agent processes: writer or reviewer, derived from argv (argv itself is not kept).
     public var role: SessionRole
+    /// The outermost `.app` bundle holding the executable, such as `/Applications/ChatGPT.app`.
+    public var appBundle: String?
 
     public init(
         pid: Int32, ppid: Int32, name: String, startTime: Date,
-        agentKind: AgentContext.Kind? = nil, role: SessionRole = .writer
+        agentKind: AgentContext.Kind? = nil, role: SessionRole = .writer, appBundle: String? = nil
     ) {
         self.pid = pid
         self.ppid = ppid
@@ -21,6 +23,14 @@ public struct ProcessRecord: Sendable, Hashable {
         self.startTime = startTime
         self.agentKind = agentKind ?? AgentMarkers.kind(name: name, executablePath: nil)
         self.role = role
+        self.appBundle = appBundle
+    }
+
+    /// `/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/…/codex` is in
+    /// `/Applications/ChatGPT.app`: nested bundles belong to the app that ships them.
+    public static func appBundle(containing executablePath: String) -> String? {
+        guard let range = executablePath.range(of: ".app/") else { return nil }
+        return String(executablePath[..<executablePath.index(before: range.upperBound)])
     }
 }
 
@@ -84,7 +94,8 @@ public struct ProcessTable: Sendable {
             let kind = AgentMarkers.kind(name: info.name, executablePath: path, argv: info.name == "node" ? loadArgv() : [])
             let role = kind == nil ? SessionRole.writer : SessionRoleClassifier.role(argv: loadArgv())
             records.append(ProcessRecord(
-                pid: pid, ppid: info.ppid, name: info.name, startTime: info.startTime, agentKind: kind, role: role
+                pid: pid, ppid: info.ppid, name: info.name, startTime: info.startTime, agentKind: kind, role: role,
+                appBundle: path.flatMap(ProcessRecord.appBundle(containing:))
             ))
         }
         return ProcessTable(records)

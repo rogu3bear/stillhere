@@ -171,7 +171,10 @@ any checkout are hidden unless you pass `--all`.
 act. A session works in the checkout of its own working directory, plus those
 of descendants started in the last 10 minutes (the commands it is running now).
 A dev server or MCP helper it started hours ago in another repo doesn't count;
-that server is still linked to the session in the menu. Sessions younger than 5
+that server is still linked to the session in the menu. Neither do helpers
+shipped inside the agent's own app bundle, such as the REPL the Codex app server
+starts in each thread's directory (including threads CCodex hands to Claude
+Code); commands it runs there still count. Sessions younger than 5
 seconds (one-shot `claude --version` and the like) don't count toward a
 collision. A dotfiles repo at `~` is ignored.
 

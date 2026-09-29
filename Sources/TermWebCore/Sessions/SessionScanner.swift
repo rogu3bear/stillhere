@@ -7,7 +7,9 @@ import Foundation
 /// a session works in the checkout of its own working directory, plus the checkouts of
 /// descendants started within `recentWindow` (the commands it is running now). Long-lived
 /// descendants such as a dev server or an MCP helper started hours ago don't count; the
-/// menu still links servers to their session through `memberPIDs`.
+/// menu still links servers to their session through `memberPIDs`. Neither do helpers
+/// shipped in the agent's own app bundle: the Codex app server starts a REPL in each
+/// thread's directory, including threads CCodex hands to Claude Code.
 public struct SessionScanner: Sendable {
     public static let recentWindow: TimeInterval = 10 * 60
     /// Sessions younger than this don't count toward a collision (except the caller's own),
@@ -70,6 +72,7 @@ public struct SessionScanner: Sendable {
             var checkouts = own.map { [$0] } ?? []
             var seen = Set(checkouts.map(\.checkoutRoot))
             for member in descendants where now.timeIntervalSince(member.startTime) <= recentWindow {
+                if member.appBundle != nil, member.appBundle == root.appBundle { continue }
                 guard let context = workCheckout(member.pid), seen.insert(context.checkoutRoot).inserted else { continue }
                 checkouts.append(context)
             }
