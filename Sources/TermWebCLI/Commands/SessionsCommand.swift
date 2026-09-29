@@ -33,7 +33,7 @@ struct SessionsCommand {
             if let warning = Self.checkWarning(overview, callerPID: caller) { output.line(warning) }
             return 0 // never block the session
         }
-        let servers = (try? await ServerQuery().entries(.init(includeHidden: true))) ?? []
+        let servers = (try? await ServerQuery.withSavedIgnoreList.entries(.init(includeHidden: true))) ?? []
         let reports = overview.reports(servers: servers, includeIdle: includeIdle)
         if json {
             try output.json(SessionsResult(sessions: reports, collisions: overview.collisions.map(CollisionReport.init)))

@@ -28,15 +28,20 @@ public struct ServerQuery: Sendable {
     public static let maxConcurrentProbes = 4
 
     private let detector: any ServerDetector
-    private let config: IgnoreConfiguration
+    /// Read on every scan, so a long-running MCP server follows edits to the ignore list.
+    private let rules: @Sendable () -> IgnoreConfiguration
 
     public init(detector: any ServerDetector = DefaultServerDetector(), config: IgnoreConfiguration = .defaults) {
+        self.init(detector: detector, rules: { config })
+    }
+
+    public init(detector: any ServerDetector = DefaultServerDetector(), rules: @escaping @Sendable () -> IgnoreConfiguration) {
         self.detector = detector
-        self.config = config
+        self.rules = rules
     }
 
     public func entries(_ filter: Filter = .init()) async throws -> [ServerEntry] {
-        try await detector.scan(config: config).filter(filter.matches)
+        try await detector.scan(config: rules()).filter(filter.matches)
     }
 
     /// Filtered entries in port order, each with its probe when `probe` is true.

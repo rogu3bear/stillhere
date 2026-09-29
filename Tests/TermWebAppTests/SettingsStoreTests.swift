@@ -42,6 +42,8 @@ import TermWebCore
         #expect(reloaded.ports.contains(9000))
         #expect(!reloaded.ports.contains(5432))
         #expect(reloaded.ignoreConfiguration == settings.ignoreConfiguration)
+        // The CLI and MCP server read exactly what Settings saved.
+        #expect(IgnoreConfiguration.saved(domain: temp.suiteName) == settings.ignoreConfiguration)
     }
 
     @Test func invalidStoredIntervalFallsBackToDefault() {

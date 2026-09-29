@@ -65,6 +65,12 @@ struct DyingDetector: ServerDetector {
         let system = FakeSignalSystem(start: start)
         let result = await stopper(system).stop(SampleServers.controlCenter, force: true)
         guard case .notStoppable = result else { Issue.record("expected notStoppable, got \(result)"); return }
+        // Listed because its hide rule is off, and still protected.
+        var shown = SampleServers.controlCenter
+        shown.hiddenReason = nil
+        shown.protection = .system
+        guard case .notStoppable = await stopper(system).stop(shown, force: true) else { Issue.record("expected notStoppable"); return }
+        #expect(ServerReport(entry: shown, probe: nil, now: SampleServers.referenceDate).stoppable == false)
         #expect(system.sent.isEmpty)
     }
 
@@ -77,6 +83,18 @@ struct DyingDetector: ServerDetector {
 
 @Suite struct ServerQueryTests {
     let query = ServerQuery(detector: FakeServerDetector())
+
+    @Test func rulesAreReadOnEveryScan() async throws {
+        // A long-running MCP server must follow edits to the saved ignore list.
+        let detector = FakeServerDetector()
+        let current = Mutex(IgnoreConfiguration.defaults)
+        let query = ServerQuery(detector: detector, rules: { current.withLock { $0 } })
+        _ = try await query.entries()
+        #expect(detector.lastConfig == .defaults)
+        current.withLock { $0.processNames = ["node"] }
+        _ = try await query.entries()
+        #expect(detector.lastConfig?.processNames == ["node"])
+    }
 
     @Test func hidesHiddenByDefault() async throws {
         let ports = try await query.entries().map(\.port)

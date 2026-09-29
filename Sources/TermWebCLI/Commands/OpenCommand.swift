@@ -19,7 +19,7 @@ struct OpenCommand {
     }
 
     func run() async throws -> Int32 {
-        let query = ServerQuery()
+        let query = ServerQuery.withSavedIgnoreList
         guard let entry = try await query.entries(.init(includeHidden: true, port: port)).first else {
             output.error("nothing is listening on port \(port)")
             return 1

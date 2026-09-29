@@ -148,6 +148,14 @@ import TermWebCore
         #expect(SampleServers.postgres.isStoppable)
         model.stopFlow.requestStop(protected)
         guard case .failed = model.stopFlow.phase(for: protected) else { Issue.record("expected refusal"); return }
+
+        // Shown because Settings turned its hide rule off: still never stopped.
+        var shown = protected
+        shown.hiddenReason = nil
+        shown.protection = .system
+        #expect(!shown.isStoppable)
+        model.stopFlow.requestStop(shown)
+        guard case .failed = model.stopFlow.phase(for: shown) else { Issue.record("expected refusal"); return }
         #expect(system.sent.isEmpty)
     }
 

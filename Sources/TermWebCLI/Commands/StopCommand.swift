@@ -61,7 +61,7 @@ struct StopCommand {
     }
 
     private func selectTargets() async throws -> [ServerEntry] {
-        let query = ServerQuery()
+        let query = ServerQuery.withSavedIgnoreList
         if orphans {
             let found = try await query.entries(.init(orphansOnly: true))
             if found.isEmpty { output.line("No orphaned servers.") }

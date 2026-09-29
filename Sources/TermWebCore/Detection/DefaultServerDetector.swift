@@ -77,6 +77,7 @@ public actor DefaultServerDetector: ServerDetector {
             project: project,
             framework: framework,
             hiddenReason: hiddenReason,
+            protection: IgnoreClassifier.protection(group, details: process),
             git: git,
             agent: agent
         )

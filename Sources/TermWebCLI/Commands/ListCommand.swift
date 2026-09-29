@@ -32,7 +32,7 @@ struct ListCommand {
             }
             filter.owner = owner
         }
-        let reports = try await ServerQuery().reports(filter, probe: !arguments.flag("no-probe"))
+        let reports = try await ServerQuery.withSavedIgnoreList.reports(filter, probe: !arguments.flag("no-probe"))
         if arguments.flag("json") {
             try output.json(reports)
         } else if reports.isEmpty {

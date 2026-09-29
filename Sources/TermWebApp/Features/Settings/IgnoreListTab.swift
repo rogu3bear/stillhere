@@ -13,7 +13,7 @@ struct IgnoreListTab: View {
                 Toggle("System executables (/System, /usr/libexec, /usr/sbin)", isOn: $settings.hideSystemExecutables)
                 Toggle("Daemons whose working folder is /", isOn: $settings.hideRootCwdDaemons)
                 Toggle("Helpers inside other apps (.app bundles)", isOn: $settings.hideAppHelpers)
-                Text("Interpreters such as node, python, ruby and bun are never hidden by these rules.")
+                Text("Interpreters such as node, python, ruby and bun are never hidden by these rules. Turning a rule off lists those processes; term-web still never stops them.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -44,6 +44,10 @@ struct IgnoreListTab: View {
 
             Section {
                 Button("Reset to Defaults") { settings.resetIgnoreList() }
+            } footer: {
+                Text("The term-web command and its MCP server for coding agents use this list too.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)

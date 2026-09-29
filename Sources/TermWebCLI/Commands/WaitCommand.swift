@@ -26,7 +26,7 @@ struct WaitCommand {
     }
 
     func run() async throws -> Int32 {
-        let outcome = await ServerWaiter().wait(port: port, timeout: .seconds(timeout), requireHTTP: requireHTTP)
+        let outcome = await ServerWaiter(query: .withSavedIgnoreList).wait(port: port, timeout: .seconds(timeout), requireHTTP: requireHTTP)
         let report = outcome.entry.map { ServerReport(entry: $0, probe: outcome.probe, now: Date()) }
         if json {
             try output.json(WaitResult(ready: outcome.ready, waitedMilliseconds: outcome.waited.milliseconds, server: report))

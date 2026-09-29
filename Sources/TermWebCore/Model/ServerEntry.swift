@@ -24,6 +24,9 @@ public struct ServerEntry: Sendable, Hashable, Identifiable {
     public var project: ProjectLocation?
     public var framework: FrameworkGuess
     public var hiddenReason: HiddenReason?
+    /// Why term-web never signals this process (system, daemon or app helper), whether or not
+    /// the ignore rules hide it.
+    public var protection: HiddenReason?
     /// The checkout the server runs from (visible rows only).
     public var git: GitContext?
     /// The coding agent that started it (visible rows only).
@@ -39,6 +42,7 @@ public struct ServerEntry: Sendable, Hashable, Identifiable {
         project: ProjectLocation? = nil,
         framework: FrameworkGuess,
         hiddenReason: HiddenReason? = nil,
+        protection: HiddenReason? = nil,
         git: GitContext? = nil,
         agent: AgentContext? = nil
     ) {
@@ -51,14 +55,16 @@ public struct ServerEntry: Sendable, Hashable, Identifiable {
         self.project = project
         self.framework = framework
         self.hiddenReason = hiddenReason
+        self.protection = protection
         self.git = git
         self.agent = agent
     }
 
     public var isHidden: Bool { hiddenReason != nil }
 
-    /// False for system, daemon and app-helper listeners: the app never offers to stop those.
-    public var isStoppable: Bool { hiddenReason?.isProtected != true }
+    /// False for system, daemon and app-helper listeners: the app never offers to stop those,
+    /// even when a "hide" rule for them is turned off.
+    public var isStoppable: Bool { protection == nil && hiddenReason?.isProtected != true }
 
     /// The URL shown, copied and opened, before a probe has told us the scheme.
     /// `localhost` resolves both families.

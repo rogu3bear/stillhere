@@ -6,7 +6,7 @@ struct MCPTools: Sendable {
     /// The agent this server runs under (inherited from Claude Code), used for `mine` and
     /// for the stop ownership rule. Matches by session ID or by the Claude Code process.
     var caller: AgentOwner? = Caller.owner
-    var query = ServerQuery()
+    var query = ServerQuery.withSavedIgnoreList
     var stopper = ServerStopper()
     var maxWait: Double = 120
     /// Session discovery; injectable so tests never read the real process table.

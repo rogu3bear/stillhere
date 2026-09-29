@@ -12,9 +12,10 @@ struct EmptyState: View {
             Text("No dev servers running")
                 .font(.callout)
             if hiddenCount > 0, !showingHidden {
+                // Hidden rows include ignored names and database ports, not only system processes.
                 Text(hiddenCount == 1
-                     ? "1 system listener is hidden. Show it in Settings."
-                     : "\(hiddenCount) system listeners are hidden. Show them in Settings.")
+                     ? "1 listener is hidden. Show it in Settings."
+                     : "\(hiddenCount) listeners are hidden. Show them in Settings.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

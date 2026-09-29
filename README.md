@@ -62,6 +62,10 @@ Open `term-web-<version>.pkg` and follow the installer. It installs
 `/usr/local/bin/term-web`. Then open term-web from Applications. It runs in
 the menu bar only, with no Dock icon. Use **Quit** in the dropdown to exit.
 
+To upgrade, install the new package the same way. The command-line tool (and
+with it the hook and the MCP server) uses the new version at once; the menu
+keeps running the old one until you **Quit** it and open term-web again.
+
 Until the package is notarized, Gatekeeper blocks it by default. See
 [Notarization](#notarization).
 
@@ -269,6 +273,11 @@ Edit these in **Settings > Ignore List**. **Reset to Defaults** restores them.
 Turn on **Show hidden servers** in **Settings > General** to list hidden
 entries in their own section, each labelled with the reason it was hidden.
 
+The command line and the MCP server use the same saved list, so
+`term-web list` and `list_servers` hide what the menu hides; `--all` and
+`include_hidden` show everything. Turning off one of the first three rules
+lists those processes, but Stop is still never offered for them.
+
 ## Settings
 
 - **Refresh every:** 2, 3, 5 (default), 10 or 30 seconds
@@ -304,7 +313,9 @@ The version lives in `VERSION`. `bundle.sh` stamps it into the app's
 The minimum macOS (26.0) is set in `Package.swift`, `scripts/common.sh`,
 `Packaging/Info.plist` and `Packaging/distribution.xml`.
 `scripts/check-version-sync.sh` runs as part of every bundle build and fails if
-any of these differ.
+any of these differ, or if the preferences domain the command-line tool reads
+the ignore list from (`IgnoreConfiguration.preferencesDomain`) is not the app's
+bundle identifier.
 
 `scripts/make-icon.sh` regenerates `Packaging/AppIcon.icns` from
 `scripts/make-icon.swift`. The generated icon is committed.

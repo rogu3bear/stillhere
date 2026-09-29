@@ -92,6 +92,39 @@ final class RecordingProber: HTTPProber {
         #expect(prober.recorded.map(\.0) == [5173])
     }
 
+    @Test func turningOffHideRulesNeverMakesSystemListenersStoppable() async throws {
+        let home = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: home) }
+        func record(_ pid: Int32, _ command: String, _ port: Int) -> ListenerRecord {
+            ListenerRecord(pid: pid, ppid: 1, command: command, family: .ipv4, bindAddress: "127.0.0.1", port: port)
+        }
+        let detector = DefaultServerDetector(
+            listenerSource: StubListenerSource(records: [
+                record(650, "ControlCenter", 7000), record(919, "HttpToUsbBridge", 50_000),
+                record(18_204, "star-mlxd", 8702), record(21_749, "bun", 4173),
+            ]),
+            inspector: StubInspector(table: [
+                650: ProcessDetails(pid: 650, name: "ControlCenter", executablePath: "/System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter", cwd: "/"),
+                919: ProcessDetails(pid: 919, name: "HttpToUsbBridge", executablePath: "/Library/Printers/Brother/HttpToUsbBridge.app/Contents/MacOS/HttpToUsbBridge", cwd: "/"),
+                18_204: ProcessDetails(pid: 18_204, name: "star-mlxd", executablePath: home.path + "/Applications/STAR.app/Contents/Resources/bin/star-mlxd", cwd: home.path),
+                21_749: ProcessDetails(pid: 21_749, name: "bun", executablePath: home.path + "/.bun/bin/bun", cwd: home.path),
+            ]),
+            prober: RecordingProber(),
+            homeDirectory: home.path
+        )
+
+        let shown = try await detector.scan(config: .none)
+        #expect(shown.allSatisfy { !$0.isHidden })
+        #expect(shown.filter(\.isStoppable).map(\.port) == [4173])
+        #expect(shown.first { $0.port == 7000 }?.protection == .system)
+        #expect(shown.first { $0.port == 50_000 }?.protection == .daemon)
+        #expect(shown.first { $0.port == 8702 }?.protection == .appHelper)
+
+        let hidden = try await detector.scan(config: .defaults)
+        #expect(hidden.filter(\.isHidden).map(\.port) == [7000, 8702, 50_000])
+        #expect(hidden.filter(\.isStoppable).map(\.port) == [4173])
+    }
+
     @Test func scanErrorsPropagate() async {
         struct Failing: ListenerSource {
             func listeners() async throws -> [ListenerRecord] { throw DetectionError.commandFailed(executable: "lsof", status: 9) }

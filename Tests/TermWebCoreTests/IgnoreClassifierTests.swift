@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import TermWebCore
 
@@ -41,6 +42,23 @@ import Testing
         #expect(classify("star-mlxd", exe: "/Users/dev/Applications/STAR.app/Contents/Resources/STARRuntime/bin/star-mlxd", cwd: "/Users/dev/proj", port: 8702) == .appHelper)
     }
 
+    @Test func protectionIgnoresTheHideToggles() {
+        // Showing system listeners must never make them stoppable.
+        let controlCenter = "/System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter"
+        #expect(classify("ControlCenter", exe: controlCenter, cwd: "/", port: 5000, config: .none) == nil)
+        #expect(IgnoreClassifier.protection(names: ["ControlCenter"], executablePath: controlCenter, cwd: "/") == .system)
+        #expect(classify("HttpToUsbBridge", exe: "/Library/Printers/Brother/HttpToUsbBridge.app/Contents/MacOS/HttpToUsbBridge", cwd: "/", port: 50_000, config: .none) == nil)
+        #expect(IgnoreClassifier.protection(names: ["HttpToUsbBridge"], executablePath: "/Library/Printers/Brother/HttpToUsbBridge.app/Contents/MacOS/HttpToUsbBridge", cwd: "/") == .daemon)
+        #expect(IgnoreClassifier.protection(names: ["star-mlxd"], executablePath: "/Users/dev/Applications/STAR.app/Contents/Resources/STARRuntime/bin/star-mlxd", cwd: "/Users/dev/proj") == .appHelper)
+
+        // Dev servers stay stoppable: interpreters are exempt, as they are from hiding.
+        let python = "/opt/homebrew/Cellar/python@3.13/3.13.1/Frameworks/Python.framework/Versions/3.13/Resources/Python.app/Contents/MacOS/Python"
+        #expect(IgnoreClassifier.protection(names: ["Python"], executablePath: python, cwd: "/Users/dev/site") == nil)
+        #expect(IgnoreClassifier.protection(names: ["node"], executablePath: "/usr/local/bin/node", cwd: "/") == nil)
+        #expect(IgnoreClassifier.protection(names: ["bun"], executablePath: "/Users/dev/.bun/bin/bun", cwd: "/Users/dev/site") == nil)
+        #expect(IgnoreClassifier.protection(names: ["postgres"], executablePath: "/opt/homebrew/bin/postgres", cwd: "/opt/homebrew/var") == nil)
+    }
+
     @Test func bunDevServerIsVisible() {
         #expect(classify("bun", exe: "/Users/dev/.bun/bin/bun", cwd: "/Users/dev/token-bar/site", port: 4173) == nil)
     }
@@ -62,6 +80,37 @@ import Testing
         #expect(classify("bun", exe: nil, cwd: nil, port: 6379) == nil)
         // Non-interpreters on the list are still hidden.
         #expect(classify("clickhouse", exe: "/opt/clickhouse", cwd: "/tmp", port: 8123, config: withPort) == .databasePort(8123))
+    }
+
+    @Test func savedRulesFallBackPerValue() {
+        let stored: [String: Any] = [
+            IgnoreConfiguration.PreferenceKey.hideAppHelpers: false,
+            IgnoreConfiguration.PreferenceKey.processNames: ["node"],
+            IgnoreConfiguration.PreferenceKey.ports: ["not", "ports"], // malformed: default
+        ]
+        let rules = IgnoreConfiguration(stored: { stored[$0] })
+        #expect(!rules.hideAppHelpers)
+        #expect(rules.hideSystemExecutables && rules.hideRootCwdDaemons)
+        #expect(rules.processNames == ["node"])
+        #expect(rules.ports == IgnoreConfiguration.defaultPorts)
+        #expect(IgnoreConfiguration(stored: { _ in nil }) == .defaults)
+    }
+
+    @Test func savedRulesAreReadFromTheAppsDomain() throws {
+        // What the CLI and MCP server do: read another process's saved preferences.
+        let domain = "term-web.tests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: domain))
+        defer {
+            UserDefaults().removePersistentDomain(forName: domain)
+            try? FileManager.default.removeItem(at: URL.libraryDirectory.appending(path: "Preferences/\(domain).plist"))
+        }
+        #expect(IgnoreConfiguration.saved(domain: domain) == .defaults)
+        defaults.set(false, forKey: IgnoreConfiguration.PreferenceKey.hideSystemExecutables)
+        defaults.set([5432, 8123], forKey: IgnoreConfiguration.PreferenceKey.ports)
+        let saved = IgnoreConfiguration.saved(domain: domain)
+        #expect(!saved.hideSystemExecutables)
+        #expect(saved.ports == [5432, 8123])
+        #expect(saved.processNames == IgnoreConfiguration.defaultProcessNames)
     }
 
     @Test func defaultsNeverHideAirPlayPortsOrPort9000ByPort() {

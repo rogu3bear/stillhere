@@ -12,11 +12,12 @@ final class SettingsStore {
         static let showHiddenServers = "showHiddenServers"
         static let probeHTTP = "probeHTTP"
         static let terminalBundleID = "terminalBundleID"
-        static let hideSystemExecutables = "ignore.hideSystemExecutables"
-        static let hideRootCwdDaemons = "ignore.hideRootCwdDaemons"
-        static let hideAppHelpers = "ignore.hideAppHelpers"
-        static let processNames = "ignore.processNames"
-        static let ports = "ignore.ports"
+        // Shared with the CLI and MCP server, which read the saved ignore list.
+        static let hideSystemExecutables = IgnoreConfiguration.PreferenceKey.hideSystemExecutables
+        static let hideRootCwdDaemons = IgnoreConfiguration.PreferenceKey.hideRootCwdDaemons
+        static let hideAppHelpers = IgnoreConfiguration.PreferenceKey.hideAppHelpers
+        static let processNames = IgnoreConfiguration.PreferenceKey.processNames
+        static let ports = IgnoreConfiguration.PreferenceKey.ports
         static let schemaVersion = "schemaVersion"
     }
 
@@ -66,12 +67,12 @@ final class SettingsStore {
         probeHTTP = defaults.object(forKey: Key.probeHTTP) as? Bool ?? true
         terminalBundleID = defaults.string(forKey: Key.terminalBundleID)
         installedTerminals = TerminalApp.findInstalled()
-        let base = IgnoreConfiguration.defaults
-        hideSystemExecutables = defaults.object(forKey: Key.hideSystemExecutables) as? Bool ?? base.hideSystemExecutables
-        hideRootCwdDaemons = defaults.object(forKey: Key.hideRootCwdDaemons) as? Bool ?? base.hideRootCwdDaemons
-        hideAppHelpers = defaults.object(forKey: Key.hideAppHelpers) as? Bool ?? base.hideAppHelpers
-        processNames = defaults.stringArray(forKey: Key.processNames) ?? base.processNames
-        ports = defaults.array(forKey: Key.ports) as? [Int] ?? base.ports
+        let saved = IgnoreConfiguration(stored: { defaults.object(forKey: $0) })
+        hideSystemExecutables = saved.hideSystemExecutables
+        hideRootCwdDaemons = saved.hideRootCwdDaemons
+        hideAppHelpers = saved.hideAppHelpers
+        processNames = saved.processNames
+        ports = saved.ports
         defaults.set(Self.schemaVersion, forKey: Key.schemaVersion)
     }
 

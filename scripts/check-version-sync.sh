@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Fails if the minimum macOS differs between Package.swift, common.sh,
-# Packaging/Info.plist and Packaging/distribution.xml, or if the CLI's
-# TermWebVersion.current differs from VERSION.
+# Packaging/Info.plist and Packaging/distribution.xml, if the CLI's
+# TermWebVersion.current differs from VERSION, or if the preferences domain the
+# CLI reads the ignore list from is not the app's BUNDLE_ID.
 set -euo pipefail
 source "$(dirname "$0")/common.sh"
 
@@ -23,6 +24,9 @@ grep -q 'hostArchitectures="arm64"' "$ROOT/Packaging/distribution.xml" \
 
 grep -q "current = \"$VERSION\"" "$ROOT/Sources/TermWebCore/Support/TermWebVersion.swift" \
   || { warn "TermWebVersion.current does not match VERSION ($VERSION)"; status=1; }
+
+grep -q "preferencesDomain = \"$BUNDLE_ID\"" "$ROOT/Sources/TermWebCore/Classification/IgnoreConfiguration.swift" \
+  || { warn "IgnoreConfiguration.preferencesDomain is not BUNDLE_ID ($BUNDLE_ID)"; status=1; }
 
 [[ $status -eq 0 ]] || die "version settings are out of sync"
 log "Version sync OK (VERSION $VERSION, macOS $MIN_MACOS)"

@@ -38,3 +38,9 @@ struct Output {
 enum Caller {
     static var owner: AgentOwner? { AgentOwner(environment: ProcessInfo.processInfo.environment) }
 }
+
+extension ServerQuery {
+    /// What every command and the MCP server scan with: the ignore list saved in the menu
+    /// app's Settings, re-read on every scan, so all surfaces hide the same listeners.
+    static var withSavedIgnoreList: ServerQuery { ServerQuery(rules: { .saved() }) }
+}
