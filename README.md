@@ -428,7 +428,11 @@ argument enables notarization; the environment is never consulted.
 
 ## License
 
-© 2026 MLNavigator Inc. All rights reserved.
+Copyright (c) 2026 MLNavigator Inc. and contributors.
+
+Still Here is licensed under [GNU GPL version 3 only](LICENSE)
+(`GPL-3.0-only`). See [NOTICE.md](NOTICE.md) for retained template and font
+license notices.
 
 ## Product website
 

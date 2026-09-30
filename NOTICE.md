@@ -1,7 +1,7 @@
 # License and third-party notices
 
 Still Here is licensed under **GNU GPL version 3 only** (`GPL-3.0-only`).
-Copyright (c) 2026 rogu3bear and contributors. See [LICENSE](LICENSE).
+Copyright (c) 2026 MLNavigator Inc. and contributors. See [LICENSE](LICENSE).
 
 The application, command-line tool, MCP server, and product website are covered
 by this license. Contributions to these parts are submitted under the same
