@@ -2,6 +2,11 @@
 
 **Know what’s still running.** App: Still Here · command: `stillhere`.
 
+Open source under [GPLv3](LICENSE) (`GPL-3.0-only`).
+[Source and issues](https://github.com/rogu3bear/stillhere) ·
+[Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) ·
+[Third-party notices](NOTICE.md).
+
 The first planned public release is **v0.1.0**. Earlier `0.3.x` version numbers
 were internal development versions. Existing history and artifacts are retained.
 
@@ -75,7 +80,7 @@ login belongs to the new app identity; enable it from the new installed copy.
 
 The v0.1.0 public installer is still in preparation. The package workflow below
 describes the intended installation once the signed, notarized artifact is
-qualified and made available. Contributors with repository access can use
+qualified and made available. You can use
 [Build from source](#build-from-source) today.
 
 Open `stillhere-<version>.pkg` and follow the installer. It installs
@@ -315,6 +320,8 @@ lists those processes, but Stop is still never offered for them.
 Requires Xcode 26 or later (Swift 6.2 or later).
 
 ```sh
+git clone https://github.com/rogu3bear/stillhere.git
+cd stillhere
 swift build                  # debug build
 swift test                   # unit tests (fake lsof output, no live processes)
 swift run stillhere           # the CLI, from source

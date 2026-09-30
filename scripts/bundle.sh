@@ -41,6 +41,7 @@ plutil -replace CFBundleIdentifier -string "$BUNDLE_ID" "$PLIST"
 plutil -replace CFBundleExecutable -string "$APP_EXECUTABLE" "$PLIST"
 plutil -lint "$PLIST" >/dev/null
 cp "$ROOT/Packaging/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+cp "$ROOT/LICENSE" "$APP/Contents/Resources/LICENSE.txt"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 # Best effort: extended attributes break codesign. The sandbox's provenance
 # attribute cannot be removed and is harmless to signing.

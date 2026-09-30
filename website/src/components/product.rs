@@ -1,5 +1,7 @@
 use leptos::prelude::*;
 
+pub const SOURCE_URL: &str = "https://github.com/rogu3bear/stillhere";
+
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[component]

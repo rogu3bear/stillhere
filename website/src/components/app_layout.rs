@@ -1,4 +1,4 @@
-use super::product::{Brand, VERSION};
+use super::product::{Brand, SOURCE_URL, VERSION};
 use leptos::prelude::*;
 
 #[component]
@@ -15,8 +15,8 @@ pub fn AppLayout(children: Children) -> impl IntoView {
         <main id="content" tabindex="-1">{children()}</main>
         <footer class="site-footer wrap">
             <div><a class="brand" href="/"><Brand/></a><p>"Know what’s still running."</p></div>
-            <nav aria-label="Footer navigation"><a href="/docs">"Guide"</a><a href="/privacy">"Privacy"</a><a href="/docs/release">"v0.1.0"</a></nav>
-            <p class="footer-note">"© 2026 MLNavigator Inc. · v" {VERSION}</p>
+            <nav aria-label="Footer navigation"><a href=SOURCE_URL target="_blank" rel="noopener noreferrer">"Source ↗"</a><a href="/docs">"Guide"</a><a href="/privacy">"Privacy"</a><a href="/docs/release">"v0.1.0"</a></nav>
+            <p class="footer-note">"© 2026 MLNavigator Inc. · GPLv3 · v" {VERSION}</p>
         </footer>
     }
 }
