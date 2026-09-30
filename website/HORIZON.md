@@ -1,5 +1,5 @@
-> Inherited template planning record (2026-08-05), not term-web design authority.
-> Current term-web routes are in `README.md`; current design is `docs/DESIGN.md`.
+> Inherited template planning record (2026-08-05), not Still Here design authority.
+> Current Still Here routes are in `README.md`; current design is `docs/DESIGN.md`.
 > The field-guide route and strategy statements below describe the template.
 > Current strategy and acceptance are `STRATEGY.md` and `docs/acceptance-criteria.md`;
 > references below to the old destructive initializer describe superseded behavior.

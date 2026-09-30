@@ -1,6 +1,6 @@
 # Developer reference
 
-These are retained `leptos-cf` developer recipes, not the term-web user guide.
+These are retained `leptos-cf` developer recipes, not the Still Here user guide.
 The current product routes, build, visual contract, and release conditions are
 owned by [the website README](../README.md), [design provenance](DESIGN.md), and
 [release notes](../RELEASE.md). The public guide lives at `/docs` and is authored

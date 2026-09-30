@@ -1,7 +1,7 @@
 // Capture the shipped SwiftUI views with inert sample data; never draw substitutes.
 import AppKit
 import SwiftUI
-import TermWebCore
+import StillHereCore
 
 @main
 struct Capture {
@@ -22,7 +22,7 @@ struct Capture {
                 let content = SettingsView().environment(stores.settings).environment(stores.launchAtLogin)
                 let host = NSHostingView(rootView: content)
                 let window = NSWindow(contentRect: NSRect(origin: .zero, size: host.fittingSize), styleMask: [.titled, .closable], backing: .buffered, defer: false)
-                window.title = "term-web Settings"
+                window.title = "Still Here Settings"
                 window.contentView = host
                 window.center()
                 window.makeKeyAndOrderFront(nil)

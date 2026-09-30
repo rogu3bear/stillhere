@@ -3,7 +3,7 @@ use leptos::prelude::*;
 #[component]
 pub fn DocsLayout(active: &'static str, children: Children) -> impl IntoView {
     let pages = [
-        ("overview", "/docs", "Why term-web"),
+        ("overview", "/docs", "Why Still Here"),
         ("start", "/docs/getting-started", "Getting started"),
         ("menu", "/docs/menu-bar", "Menu bar & Settings"),
         ("cli", "/docs/cli", "Command line"),

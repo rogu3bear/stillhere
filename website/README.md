@@ -1,6 +1,6 @@
-# term-web website
+# Still Here website
 
-The product site candidate for term-web v0.1.0. Public deployment is pending.
+The product site candidate for Still Here v0.1.0. Public deployment is pending.
 Routes: `/`, `/screens`, `/privacy`, and the guide below.
 Unknown routes return a server-rendered 404 with recovery links.
 
@@ -23,7 +23,7 @@ help; client setup links its official documentation. Future ideas live in
 `../IDEAS.md` and are not advertised as shipped functionality.
 
 Built from the operator's Leptos Cloudflare template at
-`c9054258839db3a2d85ecc5d2776922b8d717887`, adopted as `term-web-site`.
+`c9054258839db3a2d85ecc5d2776922b8d717887`, adopted as `stillhere-site`.
 The template's active dirty work was not copied or modified.
 
 The site uses Leptos 0.8 SSR and hydration, the generated Cloudflare Worker

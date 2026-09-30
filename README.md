@@ -1,16 +1,18 @@
-# term-web
+# Still Here
+
+**Know what’s still running.** App: Still Here · command: `stillhere`.
 
 The first planned public release is **v0.1.0**. Earlier `0.3.x` version numbers
 were internal development versions. Existing history and artifacts are retained.
 
-term-web finds the dev servers running on your Mac and traces each one to its
+Still Here finds the dev servers running on your Mac and traces each one to its
 project, git branch and the coding agent session that started it. You get it
 three ways, all answering from the same detector:
 
 - a **menu bar app** with one dropdown for every server (the icon shows how many
   are running, the header how many are orphaned)
-- a **`term-web` command** for your terminal and scripts
-- an **MCP server** (`term-web mcp`) so Claude Code, Codex and other agents can
+- a **`stillhere` command** for your terminal and scripts
+- an **MCP server** (`stillhere mcp`) so Claude Code, Codex and other agents can
   wait for, list and clean up the servers they start
 
 You know something is running, but the terminal is buried, the browser has an
@@ -20,7 +22,7 @@ server, stop that exact process from the menu instead of hunting for its shell.
 The web guide walks through this workflow and explains what each label proves.
 
 Coding agents start dev servers all day, often in worktrees, and leave them
-running when their session ends. term-web names the agent behind each server
+running when their session ends. Still Here names the agent behind each server
 and flags the **orphans**: servers whose launching session has ended, so
 nothing will stop them for you.
 
@@ -66,19 +68,24 @@ processes sharing a port get separate entries.
 
 ## Install
 
+Previously named `term-web`. Saved General and Ignore List settings carry forward
+on first launch; the CLI can read the legacy ignore list before that launch.
+Update existing MCP configurations and hooks to invoke `stillhere`. Launch at
+login belongs to the new app identity; enable it from the new installed copy.
+
 The v0.1.0 public installer is still in preparation. The package workflow below
 describes the intended installation once the signed, notarized artifact is
 qualified and made available. Contributors with repository access can use
 [Build from source](#build-from-source) today.
 
-Open `term-web-<version>.pkg` and follow the installer. It installs
-`/Applications/term-web.app` and links the command-line tool at
-`/usr/local/bin/term-web`. Then open term-web from Applications. It runs in
+Open `stillhere-<version>.pkg` and follow the installer. It installs
+`/Applications/Still Here.app` and links the command-line tool at
+`/usr/local/bin/stillhere`. Then open Still Here from Applications. It runs in
 the menu bar only, with no Dock icon. Use **Quit** in the dropdown to exit.
 
 To upgrade, install the new package the same way. The command-line tool (and
 with it the hook and the MCP server) uses the new version at once; the menu
-keeps running the old one until you **Quit** it and open term-web again.
+keeps running the old one until you **Quit** it and open Still Here again.
 
 Until the package is notarized, Gatekeeper blocks it by default. See
 [Notarization](#notarization).
@@ -86,20 +93,20 @@ Until the package is notarized, Gatekeeper blocks it by default. See
 ## Command line
 
 ```sh
-term-web                      # table of running dev servers (same as `term-web list`)
-term-web list --json          # stable JSON: every key present, null when unknown
-term-web list --mine          # servers started by the Claude Code session running this
-term-web list --orphans       # servers whose launching agent session has ended
-term-web wait 5173            # block until :5173 answers HTTP, print its URL (exit 1 on timeout)
-term-web open 5173            # open in the default browser (https when TLS-only)
-term-web stop 5173            # SIGTERM after confirming; --yes without a terminal, --force for SIGKILL
-term-web stop --orphans --yes # clean up every orphaned server
+stillhere                      # table of running dev servers (same as `stillhere list`)
+stillhere list --json          # stable JSON: every key present, null when unknown
+stillhere list --mine          # servers started by the Claude Code session running this
+stillhere list --orphans       # servers whose launching agent session has ended
+stillhere wait 5173            # block until :5173 answers HTTP, print its URL (exit 1 on timeout)
+stillhere open 5173            # open in the default browser (https when TLS-only)
+stillhere stop 5173            # SIGTERM after confirming; --yes without a terminal, --force for SIGKILL
+stillhere stop --orphans --yes # clean up every orphaned server
 ```
 
 ```sh
-term-web sessions             # agent sessions: checkouts, branches, servers, collisions
-term-web sessions --json      # the same, for tools
-term-web sessions --check     # for a SessionStart hook (see below)
+stillhere sessions             # agent sessions: checkouts, branches, servers, collisions
+stillhere sessions --json      # the same, for tools
+stillhere sessions --check     # for a SessionStart hook (see below)
 ```
 
 `list --all` includes hidden listeners and `--no-probe` skips the HTTP check.
@@ -109,17 +116,17 @@ to the same process. Exit codes: 0 success, 1 failure or timeout, 2 usage error.
 
 ## Coding agents (MCP)
 
-`term-web mcp` is an MCP server on stdio. Add it to Claude Code:
+`stillhere mcp` is an MCP server on stdio. Add it to Claude Code:
 
 ```sh
-claude mcp add term-web -- term-web mcp
+claude mcp add stillhere -- stillhere mcp
 ```
 
 or to Codex (`~/.codex/config.toml`):
 
 ```toml
-[mcp_servers.term-web]
-command = "term-web"
+[mcp_servers.stillhere]
+command = "stillhere"
 args = ["mcp"]
 ```
 
@@ -149,7 +156,7 @@ project's `.claude/settings.json`):
 {
   "hooks": {
     "SessionStart": [
-      { "hooks": [{ "type": "command", "command": "term-web sessions --check" }] }
+      { "hooks": [{ "type": "command", "command": "stillhere sessions --check" }] }
     ]
   }
 }
@@ -165,7 +172,7 @@ exits 0, so it never blocks a session.
 ## How agent tracing works
 
 Coding agents mark the processes they start with environment variables, and a
-dev server inherits them. term-web reads **only** these variables from other
+dev server inherits them. Still Here reads **only** these variables from other
 processes, and skips every other variable byte by byte without decoding it:
 
 | Variable | Set by | Used for |
@@ -202,7 +209,7 @@ collision. A dotfiles repo at `~` is ignored.
 
 **Roles.** Only *writers* collide. A session launched for review or with edits
 disabled is a **reviewer**: it is listed ("reviewing") but never counts toward a
-collision. term-web decides this only from explicit launch flags on the agent
+collision. Still Here decides this only from explicit launch flags on the agent
 process: iTerm2's built-in code review (`--settings …/iTerm.app/Contents/Resources/code-review-settings.txt`),
 Claude Code's `--permission-mode plan` or `--disallowedTools` covering both Edit
 and Write, and Codex's `--sandbox read-only`. Everything else is a writer, so a
@@ -211,19 +218,19 @@ real collision is never hidden by a guess.
 Limits: the Codex desktop app runs all its threads under one app server, so two
 Codex threads in one checkout look like one session and never collide with
 each other. Two sessions in one checkout are flagged whether or not both are
-editing: term-web can see where agents are, not what they will write.
+editing: Still Here can see where agents are, not what they will write.
 
 A server is **orphaned** only when its launcher PID is known (Claude Code's
 `CLAUDE_PID`) and that process has exited, or the PID now belongs to a process
 started after the server. Agents that don't expose a launcher PID are named but
-never called orphaned: term-web does not guess.
+never called orphaned: Still Here does not guess.
 
 The git branch and worktree come from reading `.git/HEAD` (or a worktree's
 `.git` file) directly. No `git` process is run.
 
 ## Privacy
 
-- term-web makes no network connections except HTTP(S) requests to `127.0.0.1`
+- Still Here makes no network connections except HTTP(S) requests to `127.0.0.1`
   and `::1` on the ports it found. There is no telemetry. For HTTPS it accepts
   self-signed certificates, only for those loopback addresses.
 - From other processes' environments it reads only the agent markers listed
@@ -238,12 +245,12 @@ The git branch and worktree come from reading `.git/HEAD` (or a worktree's
 - To guess a framework, it reads `package.json`, `Gemfile`, `pyproject.toml`
   and similar files near a server's working directory. If a project lives under
   Documents, Desktop, Downloads or iCloud Drive, macOS may ask once whether
-  term-web can access that folder. Declining only makes the framework guess less
+  Still Here can access that folder. Declining only makes the framework guess less
   specific.
 
 ## How detection works
 
-Detection lives in the `TermWebCore` library, separate from the UI, and runs
+Detection lives in the `StillHereCore` library, separate from the UI, and runs
 off the main thread.
 
 1. `lsof -nP -iTCP -sTCP:LISTEN -F pcRtn` lists your TCP listening sockets.
@@ -288,7 +295,7 @@ Turn on **Show hidden servers** in **Settings > General** to list hidden
 entries in their own section, each labelled with the reason it was hidden.
 
 The command line and the MCP server use the same saved list, so
-`term-web list` and `list_servers` hide what the menu hides; `--all` and
+`stillhere list` and `list_servers` hide what the menu hides; `--all` and
 `include_hidden` show everything. Turning off one of the first three rules
 lists those processes, but Stop is still never offered for them.
 
@@ -300,7 +307,7 @@ lists those processes, but Stop is still never offered for them.
 - **Open folders in:** Automatic (the first installed of iTerm2, Ghostty and
   Warp, else Terminal) or a specific installed terminal
 - **Launch at login:** uses `SMAppService`. Register it only from
-  `/Applications/term-web.app`. A copy run from `build/` registers that path
+  `/Applications/Still Here.app`. A copy run from `build/` registers that path
   instead. If macOS needs approval, the Settings window links to Login Items.
 
 ## Build from source
@@ -310,20 +317,20 @@ Requires Xcode 26 or later (Swift 6.2 or later).
 ```sh
 swift build                  # debug build
 swift test                   # unit tests (fake lsof output, no live processes)
-swift run term-web           # the CLI, from source
-scripts/bundle.sh --dev      # build/term-web.app, ad-hoc signed for local runs
-open build/term-web.app
+swift run stillhere           # the CLI, from source
+scripts/bundle.sh --dev      # build/Still Here.app, ad-hoc signed for local runs
+open "build/Still Here.app"
 ```
 
 The project uses Swift Package Manager only. There is no Xcode project, because
 SwiftPM builds the executables and the scripts assemble the `.app` bundle.
-Targets: `TermWebCore` (detection, provenance, reports; no UI), `TermWebApp`
-(the menu bar app, binary `TermWeb`) and `TermWebCLI` (the `term-web` command
+Targets: `StillHereCore` (detection, provenance, reports; no UI), `StillHereApp`
+(the menu bar app, binary `StillHereApp`) and `StillHereCLI` (the `stillhere` command
 and MCP server). The bundle carries both binaries in `Contents/MacOS`.
 
 The version lives in `VERSION`. `bundle.sh` stamps it into the app's
 `Info.plist`, `package.sh` uses it for the package version and file name, and
-`TermWebVersion.current` (what `term-web version` prints) must match it.
+`StillHereVersion.current` (what `stillhere version` prints) must match it.
 The minimum macOS (26.0) is set in `Package.swift`, `scripts/common.sh`,
 `Packaging/Info.plist` and `Packaging/distribution.xml`.
 `scripts/check-version-sync.sh` runs as part of every bundle build and fails if
@@ -342,15 +349,15 @@ scripts/package.sh [--force] [--notary-profile NAME]
 
 This script:
 
-1. builds the release arm64 app and CLI and bundles `build/term-web.app`
+1. builds the release arm64 app and CLI and bundles `build/Still Here.app`
 2. signs the CLI, then the app, with Developer ID Application, using the
    hardened runtime and a secure timestamp, with no entitlements
 3. builds a component package that installs to `/Applications`, and a second
-   one that links `/usr/local/bin/term-web` to the CLI inside the app
+   one that links `/usr/local/bin/stillhere` to the CLI inside the app
 4. builds a product archive from `Packaging/distribution.xml` (title, arm64
    host requirement, minimum macOS 26.0) and signs it with Developer ID
    Installer
-5. writes `dist/term-web-<VERSION>.pkg` and a `.sha256` file next to it
+5. writes `dist/stillhere-<VERSION>.pkg` and a `.sha256` file next to it
 6. runs checks: `codesign --verify --deep --strict` on the app and on a copy
    extracted from the package, `pkgutil --check-signature`, checks that the
    payload contains both binaries with install location `/Applications` and
@@ -395,12 +402,12 @@ argument enables notarization; the environment is never consulted.
 ## Troubleshooting
 
 - **The Settings window opens behind other windows.** A menu bar app is not
-  the active app when its panel closes. term-web activates itself before opening
-  Settings. If the window still ends up behind others, click the term-web
+  the active app when its panel closes. Still Here activates itself before opening
+  Settings. If the window still ends up behind others, click the Still Here
   menu bar icon again or use Mission Control to bring it forward.
-- **`term-web: command not found`.** The installer links
-  `/usr/local/bin/term-web`; make sure `/usr/local/bin` is on your `PATH`, or
-  run `/Applications/term-web.app/Contents/MacOS/term-web`.
+- **`stillhere: command not found`.** The installer links
+  `/usr/local/bin/stillhere`; make sure `/usr/local/bin` is on your `PATH`, or
+  run `/Applications/Still Here.app/Contents/MacOS/stillhere`.
 - **A server shows no agent.** Only servers started while an agent's markers
   were in the environment, or whose agent process is still an ancestor, can be
   attributed. Servers started from your own shell correctly show none.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds a release binary and assembles build/term-web.app.
+# Builds a release binary and assembles build/Still Here.app.
 # Usage: scripts/bundle.sh [--dev]
 #   --dev  ad-hoc sign the bundle (hardened runtime) so it can be launched locally.
 #          package.sh signs with Developer ID instead and does not pass --dev.

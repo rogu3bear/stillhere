@@ -1,5 +1,5 @@
 > This document is retained from the template as a recipe reference. The
-> term-web product site owns only `/`, `/docs`, and `/privacy`; its active
+> Still Here product site owns only `/`, `/docs`, and `/privacy`; its active
 > workflow is in [the website README](../README.md) and [release conditions](../RELEASE.md).
 > Provider operations in this workspace use `cfctl`. Sample D1 and realtime
 > workflows are not product features and require separate adoption.

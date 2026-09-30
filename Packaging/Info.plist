@@ -5,17 +5,17 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>term-web</string>
+	<string>Still Here</string>
 	<key>CFBundleExecutable</key>
-	<string>TermWeb</string>
+	<string>StillHereApp</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.mlnavigator.term-web</string>
+	<string>com.mlnavigator.stillhere</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>term-web</string>
+	<string>Still Here</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

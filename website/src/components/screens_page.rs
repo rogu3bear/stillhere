@@ -5,11 +5,11 @@ use leptos_meta::Title;
 #[component]
 pub fn ScreensPage() -> impl IntoView {
     view! {
-        <Title text="The app, in full — term-web"/>
+        <Title text="The app, in full — Still Here"/>
         <div class="screens-page wrap">
             <p class="eyebrow">"THE NATIVE APP / v0.1.0"</p>
             <h1>"The app, in full."</h1>
-            <p class="screens-intro">"The actual SwiftUI and AppKit views used by term-web. Original captures, with their native controls, labels, and colors. Sample projects keep private work out of the pictures."</p>
+            <p class="screens-intro">"The actual SwiftUI and AppKit views used by Still Here. Original captures, with their native controls, labels, and colors. Sample projects keep private work out of the pictures."</p>
             <div class="screens-grid">
                 <NativeScreen src="menu-bar.png" label="01 / MENU BAR · LIGHT" description="Servers, branches, agents, and checkout collisions." width=800 height=712/>
                 <NativeScreen src="menu-bar-dark.png" label="02 / MENU BAR · DARK" description="The same menu in the native macOS dark appearance." width=800 height=712/>

@@ -28,7 +28,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
                 <link rel="icon" href="/images/app-icon.png" type="image/png"/>
                 <link rel="manifest" href="/site.webmanifest"/>
                 <meta name="theme-color" content="#fafafa"/>
-                <meta property="og:title" content="term-web — A little clarity for localhost"/>
+                <meta property="og:title" content="Still Here — Know what’s still running."/>
                 <meta property="og:description" content="Every dev server, its project, branch, and the agent behind it. A native utility for your Mac."/>
                 <meta property="og:type" content="website"/>
                 <AutoReload options=options.clone()/>
@@ -48,7 +48,7 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
 
     view! {
-        <Title text="term-web"/>
+        <Title text="Still Here"/>
         <Meta
             name="description"
             content="Find every dev server on your Mac, its project, git branch, and the coding agent behind it. Menu bar app, CLI, and MCP server."
@@ -91,12 +91,12 @@ fn NotFoundPage() -> impl IntoView {
     }
 
     view! {
-        <Title text="Page not found — term-web"/>
+        <Title text="Page not found — Still Here"/>
         <div class="document wrap route-miss">
             <p class="eyebrow">"404 / PAGE NOT FOUND"</p>
             <h1>"Nothing running here."</h1>
             <p>"This address does not point to a page. Head home or open the guide."</p>
-            <div class="actions"><a class="button" href="/">"Back to term-web"</a><a class="text-link" href="/docs">"Open the guide →"</a></div>
+            <div class="actions"><a class="button" href="/">"Back to Still Here"</a><a class="text-link" href="/docs">"Open the guide →"</a></div>
         </div>
     }
 }

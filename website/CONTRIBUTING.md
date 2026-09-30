@@ -1,6 +1,6 @@
 # Contributing
 
-This is the term-web product website, adopted from `leptos-cf`. The public
+This is the Still Here product website, adopted from `leptos-cf`. The public
 guide is implemented in `src/components/docs_*.rs`; `docs/` retains developer
 recipes from the template. Product changes should reflect current native
 behavior and preserve the monochrome design and real screenshot provenance.

@@ -2,15 +2,16 @@
 # Sets ROOT, VERSION, MIN_MACOS, BUNDLE_ID, APP_NAME, APP_EXECUTABLE, CLI_NAME and the log helpers.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-APP_NAME="term-web"
+APP_NAME="Still Here"
+PACKAGE_NAME="stillhere"
 # The menu bar app's binary (CFBundleExecutable) and the CLI shipped next to it.
-APP_EXECUTABLE="TermWeb"
-CLI_NAME="term-web"
-BUNDLE_ID="com.mlnavigator.term-web"
-PKG_ID="com.mlnavigator.term-web.pkg"
-# Second component: /usr/local/bin/term-web, a symlink to the CLI inside the app.
-CLI_PKG_ID="com.mlnavigator.term-web.cli.pkg"
-CLI_LINK="/usr/local/bin/term-web"
+APP_EXECUTABLE="StillHereApp"
+CLI_NAME="stillhere"
+BUNDLE_ID="com.mlnavigator.stillhere"
+PKG_ID="com.mlnavigator.stillhere.pkg"
+# Second component: /usr/local/bin/stillhere, a symlink to the CLI inside the app.
+CLI_PKG_ID="com.mlnavigator.stillhere.cli.pkg"
+CLI_LINK="/usr/local/bin/stillhere"
 TEAM_ID="4JB58L7BTZ"
 # Keep in sync with Package.swift (.macOS(.v26)); check-version-sync.sh enforces it.
 MIN_MACOS="26.0"

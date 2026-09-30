@@ -1,10 +1,10 @@
-# term-web visual direction
+# Still Here visual direction
 
 The selected authority is the operator's explicit request to reproduce the
 [original monochrome Refero reference](https://styles.refero.design/style/f24daf3a-d43f-4dec-85a9-8ac1d5148a03).
 The reference screen is a 1600×1000 capture with a compact left-aligned two-line
 headline, a centered product subject, right-aligned uppercase mono annotations,
-a narrow header, and generous unbroken white space. Keep term-web's own brand,
+a narrow header, and generous unbroken white space. Keep Still Here's own brand,
 content, routes, and actual app identity. Cloudflare hosting is independent of
 the reference's brand; publication uses cfctl.
 

@@ -11,22 +11,22 @@ import subprocess
 import plistlib
 import shutil
 import struct
-sources = sorted(str(p) for p in Path('Sources/TermWebApp').rglob('*.swift')
-                 if p.name not in {'TermWebApp.swift', 'Previews.swift'})
+sources = sorted(str(p) for p in Path('Sources/StillHereApp').rglob('*.swift')
+                 if p.name not in {'StillHereApp.swift', 'Previews.swift'})
 subprocess.run(['swiftc', '-parse-as-library', '-default-isolation', 'MainActor',
                 '-I', '.build/debug', '-module-cache-path', 'build/capture-module-cache',
-                '.build/debug/TermWebCore.o', *sources,
-                'scripts/capture-site-images.swift', '-o', 'build/term-web-capture'], check=True)
+                '.build/debug/StillHereCore.o', *sources,
+                'scripts/capture-site-images.swift', '-o', 'build/stillhere-capture'], check=True)
 for screen in ['settings', 'about']:
-    bundle = Path(f'build/site-native/{screen}.app')
+    bundle = Path(f'build/site-native/stillhere-{screen}.app')
     (bundle/'Contents/MacOS').mkdir(parents=True, exist_ok=True)
     (bundle/'Contents/Resources').mkdir(parents=True, exist_ok=True)
-    shutil.copy2('build/term-web-capture', bundle/'Contents/MacOS/TermWeb')
+    shutil.copy2('build/stillhere-capture', bundle/'Contents/MacOS/StillHereApp')
     shutil.copy2('Packaging/AppIcon.icns', bundle/'Contents/Resources/AppIcon.icns')
     info = plistlib.loads(Path('Packaging/Info.plist').read_bytes())
-    info.update(CFBundleIdentifier=f'com.mlnavigator.term-web.capture.{screen}', CFBundleShortVersionString=Path('VERSION').read_text().strip(), CFBundleVersion=Path('VERSION').read_text().strip(), CaptureScreen=screen, LSUIElement=False)
+    info.update(CFBundleIdentifier=f'com.mlnavigator.stillhere.capture.{screen}', CFBundleShortVersionString=Path('VERSION').read_text().strip(), CFBundleVersion=Path('VERSION').read_text().strip(), CaptureScreen=screen, LSUIElement=False)
     (bundle/'Contents/Info.plist').write_bytes(plistlib.dumps(info))
-subprocess.run(['build/term-web-capture', str(Path('website/assets/images').resolve())], check=True)
+subprocess.run(['build/stillhere-capture', str(Path('website/assets/images').resolve())], check=True)
 # Extract the app's existing 512px PNG chunk byte-for-byte; do not redraw it.
 icon = Path('Packaging/AppIcon.icns').read_bytes()
 offset = 8

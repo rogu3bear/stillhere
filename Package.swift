@@ -2,40 +2,40 @@
 import PackageDescription
 
 let package = Package(
-    name: "TermWeb",
+    name: "StillHere",
     platforms: [.macOS(.v26)],
     products: [
-        // The menu bar app's binary (Contents/MacOS/TermWeb in term-web.app).
-        .executable(name: "TermWeb", targets: ["TermWebApp"]),
+        // The menu bar app's binary (Contents/MacOS/StillHereApp in Still Here.app).
+        .executable(name: "StillHereApp", targets: ["StillHereApp"]),
         // The command-line tool and MCP server, shipped inside the app bundle.
-        .executable(name: "term-web", targets: ["TermWebCLI"]),
+        .executable(name: "stillhere", targets: ["StillHereCLI"]),
     ],
     targets: [
         // Detection library: nonisolated, Sendable value types, no UI imports.
-        .target(name: "TermWebCore"),
+        .target(name: "StillHereCore"),
         // UI target: MainActor by default.
         .executableTarget(
-            name: "TermWebApp",
-            dependencies: ["TermWebCore"],
+            name: "StillHereApp",
+            dependencies: ["StillHereCore"],
             swiftSettings: [.defaultIsolation(MainActor.self)]
         ),
         // CLI + MCP server: nonisolated, no SwiftUI.
         .executableTarget(
-            name: "TermWebCLI",
-            dependencies: ["TermWebCore"]
+            name: "StillHereCLI",
+            dependencies: ["StillHereCore"]
         ),
         .testTarget(
-            name: "TermWebCoreTests",
-            dependencies: ["TermWebCore"],
+            name: "StillHereCoreTests",
+            dependencies: ["StillHereCore"],
             resources: [.copy("Fixtures")]
         ),
         .testTarget(
-            name: "TermWebCLITests",
-            dependencies: ["TermWebCLI", "TermWebCore"]
+            name: "StillHereCLITests",
+            dependencies: ["StillHereCLI", "StillHereCore"]
         ),
         .testTarget(
-            name: "TermWebAppTests",
-            dependencies: ["TermWebApp", "TermWebCore"],
+            name: "StillHereAppTests",
+            dependencies: ["StillHereApp", "StillHereCore"],
             swiftSettings: [.defaultIsolation(MainActor.self)]
         ),
     ]

@@ -30,7 +30,7 @@ while (queue.length) {
     throw new Error(`Product route ${path} did not return HTML with status 200.`);
   }
   const html = (await response.text()).replace(/ nonce="[^"]*"/g, '');
-  if (!html.includes('term-web') || /<form[\s>]/i.test(html)) {
+  if (!html.includes('Still Here') || /<form[\s>]/i.test(html)) {
     throw new Error(`Unexpected page content or form at ${path}.`);
   }
   for (const extension of ['js', 'wasm', 'css']) {
@@ -60,7 +60,7 @@ for (const match of missingHtml.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/
 }
 const version = (await readFile('../VERSION', 'utf8')).trim();
 const fingerprint = digest(JSON.stringify({ version, pages: [...pages], missingHtml, assets }));
-const output = resolve(`var/pages/term-web-${version}-${fingerprint.slice(0, 16)}`);
+const output = resolve(`var/pages/stillhere-${version}-${fingerprint.slice(0, 16)}`);
 await mkdir(output, { recursive: true });
 for (const entry of await readdir('target/site', { withFileTypes: true })) {
   if (entry.name === '_headers' || entry.name.startsWith('_worker')) continue;

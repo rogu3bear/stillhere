@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Builds, signs and verifies dist/term-web-<VERSION>.pkg.
+# Builds, signs and verifies dist/stillhere-<VERSION>.pkg.
 # Usage: scripts/package.sh [--notary-profile NAME] [--force]
 #   --notary-profile NAME  notarize and staple with this notarytool keychain
 #                          profile. Only this explicit argument enables
 #                          notarization (the environment is ignored); without
 #                          it nothing is sent to Apple.
-#   --force                replace an existing dist/term-web-<VERSION>.pkg.
+#   --force                replace an existing dist/stillhere-<VERSION>.pkg.
 # Identities can be overridden with APP_SIGN_ID and INSTALLER_SIGN_ID
 # (a SHA-1 hash or the full certificate name).
 set -euo pipefail
@@ -30,8 +30,8 @@ APP_SIGN_ID="${APP_SIGN_ID:-092DB0E5D9AC568FD4CD8D2C1D55A4EA0C09E71E}"
 INSTALLER_SIGN_ID="${INSTALLER_SIGN_ID:-D8CC67B106AC29F11A447991A0A659B5632D3CE4}"
 
 APP="$ROOT/build/$APP_NAME.app"
-COMPONENT="$ROOT/build/$APP_NAME-component.pkg"
-PKG="$ROOT/dist/$APP_NAME-$VERSION.pkg"
+COMPONENT="$ROOT/build/$PACKAGE_NAME-component.pkg"
+PKG="$ROOT/dist/$PACKAGE_NAME-$VERSION.pkg"
 
 if [[ -e "$PKG" ]]; then
   [[ $FORCE -eq 1 ]] || die "$PKG exists (bump VERSION, remove it, or pass --force)"
@@ -53,7 +53,7 @@ grep -q "TeamIdentifier=$TEAM_ID" <<<"$SIGN_INFO" || die "TeamIdentifier is not 
 grep -q '^Timestamp=' <<<"$SIGN_INFO" || die "secure timestamp missing"
 [[ -z "$(codesign -d --entitlements - --xml "$APP" 2>/dev/null)" ]] || die "unexpected entitlements"
 
-# 3. Component package that installs term-web.app into /Applications.
+# 3. Component package that installs Still Here.app into /Applications.
 # pkgbuild stores any extended attribute as an AppleDouble ._ entry in the Bom and
 # Payload. Stage a copy without xattrs, resource forks, quarantine or ACLs (the
 # signature lives in the bundle, not in xattrs) and stop copyfile writing ._ files.
@@ -100,7 +100,7 @@ fi
 # 3b. Component that links the CLI onto PATH. A symlink, not a copy: the binary stays
 # sealed inside the signed app and updates with it.
 log "Building CLI link component"
-CLI_COMPONENT="$ROOT/build/$APP_NAME-cli-component.pkg"
+CLI_COMPONENT="$ROOT/build/$PACKAGE_NAME-cli-component.pkg"
 CLI_STAGE="$ROOT/build/cliroot"
 rm -rf "$CLI_STAGE" "$CLI_COMPONENT"
 mkdir -p "$CLI_STAGE$(dirname "$CLI_LINK")"
@@ -137,13 +137,13 @@ if grep -q '/\._' <<<"$PAYLOAD"; then
 fi
 rm -rf "$ROOT/build/expanded" "$ROOT/build/full"
 pkgutil --expand "$PKG" "$ROOT/build/expanded"
-grep -q 'install-location="/Applications"' "$ROOT/build/expanded/$APP_NAME-component.pkg/PackageInfo" \
+grep -q 'install-location="/Applications"' "$ROOT/build/expanded/$PACKAGE_NAME-component.pkg/PackageInfo" \
   || die "component install-location is not /Applications"
 grep -q 'hostArchitectures="arm64"' "$ROOT/build/expanded/Distribution" \
   || die "distribution lacks the arm64 host requirement"
 pkgutil --expand-full "$PKG" "$ROOT/build/full"
-codesign --verify --deep --strict --verbose=2 "$ROOT/build/full/$APP_NAME-component.pkg/Payload/$APP_NAME.app"
-LINK_TARGET="$(readlink "$ROOT/build/full/$APP_NAME-cli-component.pkg/Payload$CLI_LINK")"
+codesign --verify --deep --strict --verbose=2 "$ROOT/build/full/$PACKAGE_NAME-component.pkg/Payload/$APP_NAME.app"
+LINK_TARGET="$(readlink "$ROOT/build/full/$PACKAGE_NAME-cli-component.pkg/Payload$CLI_LINK")"
 [[ "$LINK_TARGET" == "/Applications/$APP_NAME.app/Contents/MacOS/$CLI_NAME" ]] \
   || die "CLI link points at '$LINK_TARGET'"
 log "Payload links $CLI_LINK -> $LINK_TARGET"

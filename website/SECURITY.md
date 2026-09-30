@@ -2,9 +2,9 @@
 
 ## Supported Versions
 
-The term-web website is preparing its first public release, v0.1.0. The native
+The Still Here website is preparing its first public release, v0.1.0. The native
 installer is qualified separately. Retained template history does not establish
-a supported public term-web release.
+a supported public Still Here release.
 
 ## Reporting a Vulnerability
 

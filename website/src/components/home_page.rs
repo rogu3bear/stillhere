@@ -5,17 +5,17 @@ use leptos_meta::Title;
 #[component]
 pub fn HomePage() -> impl IntoView {
     view! {
-        <Title text="term-web — A little clarity for localhost"/>
+        <Title text="Still Here — Know what’s still running."/>
         <section class="hero wrap" aria-labelledby="hero-title">
             <div class="hero-copy">
-                <h1 id="hero-title">"Localhost."<br/>"Under control."</h1>
+                <h1 id="hero-title">"Know what’s"<br/>"still running."</h1>
                 <p class="hero-description">"See every local server, its project, and the agent behind it. Right from your Mac’s menu bar."</p>
-                <div class="actions"><a class="button" href="#download" target="_self">"Get term-web"</a><a class="button button-outline" href="/screens">"See the app"</a></div>
+                <div class="actions"><a class="button" href="#download" target="_self">"Get Still Here"</a><a class="button button-outline" href="/screens">"See the app"</a></div>
                 <p class="requirements">"v" {VERSION} " · Apple silicon · macOS 26+"</p>
             </div>
             <figure class="hero-screen">
                 <figcaption>"THE MENU BAR / LIGHT"</figcaption>
-                <a href="/images/menu-bar.png" target="_self" aria-label="Open the original menu bar capture"><img src="/images/menu-bar.png" alt="The actual term-web menu showing three local servers, their projects, and coding agents" width="800" height="712" fetchpriority="high"/></a>
+                <a href="/images/menu-bar.png" target="_self" aria-label="Open the original menu bar capture"><img src="/images/menu-bar.png" alt="The actual Still Here menu showing three local servers, their projects, and coding agents" width="800" height="712" fetchpriority="high"/></a>
                 <p>"Actual app view · sample projects"</p>
             </figure>
             <div class="hero-annotation"><p>"FOR LOCAL DEVELOPMENT"</p><p>"EVERY SERVER AND SESSION"</p><p>"RIGHT IN YOUR MENU BAR"</p></div>
@@ -50,13 +50,13 @@ pub fn HomePage() -> impl IntoView {
         <section class="tools-section section" aria-labelledby="tools-title"><div class="wrap">
             <div class="tools-heading"><div><p class="eyebrow">"AT HOME IN YOUR WORKFLOW"</p><h2 id="tools-title">"From the menu bar"<br/>"to your next command."</h2></div><p>"Use the same detector from a terminal, a script, or an agent. No second inventory to keep in sync."</p></div>
             <div class="tools-grid">
-                <article><div class="tool-meta"><span>"02 / COMMAND LINE"</span><span>"$"</span></div><h3>"Ask localhost a better question."</h3><CodeBlock label="List, inspect, wait" code="term-web\nterm-web list --json\nterm-web sessions\nterm-web wait 5173"/><p>"Readable tables for you. Stable JSON for your scripts."</p><a class="text-link" href="/docs/cli">"Explore the CLI →"</a></article>
-                <article><div class="tool-meta"><span>"03 / MCP"</span><span>"↔"</span></div><h3>"Let your agent see what it started."</h3><CodeBlock label="Connect Claude Code" code="claude mcp add --transport stdio --scope user term-web -- term-web mcp"/><p>"List servers and sessions, wait for an actual response, and check ownership before stopping a server."</p><a class="text-link" href="/docs/agents">"Connect your agent →"</a></article>
+                <article><div class="tool-meta"><span>"02 / COMMAND LINE"</span><span>"$"</span></div><h3>"Ask localhost a better question."</h3><CodeBlock label="List, inspect, wait" code="stillhere\nstillhere list --json\nstillhere sessions\nstillhere wait 5173"/><p>"Readable tables for you. Stable JSON for your scripts."</p><a class="text-link" href="/docs/cli">"Explore the CLI →"</a></article>
+                <article><div class="tool-meta"><span>"03 / MCP"</span><span>"↔"</span></div><h3>"Let your agent see what it started."</h3><CodeBlock label="Connect Claude Code" code="claude mcp add --transport stdio --scope user stillhere -- stillhere mcp"/><p>"List servers and sessions, wait for an actual response, and check ownership before stopping a server."</p><a class="text-link" href="/docs/agents">"Connect your agent →"</a></article>
             </div>
         </div></section>
         <section class="privacy-strip wrap section" aria-labelledby="privacy-title"><span class="privacy-symbol" aria-hidden="true">"◎"</span><div><p class="eyebrow">"LOCAL BY DESIGN"</p><h2 id="privacy-title">"Your machine. Your business."</h2><p>"The app stays on your Mac. No telemetry. No account. Network requests go only to your local servers."</p><a class="text-link" href="/privacy">"Read the privacy details →"</a></div></section>
         <section class="download-section" id="download" aria-labelledby="download-title"><div class="wrap download-grid">
-            <div><p class="eyebrow">"THE FIRST PUBLIC VERSION"</p><h2 id="download-title">"Make yourself"<br/>"at home on localhost."</h2><p>"term-web v" {VERSION} " for Apple silicon Macs running macOS 26 or later."</p></div>
+            <div><p class="eyebrow">"THE FIRST PUBLIC VERSION"</p><h2 id="download-title">"Make yourself"<br/>"at home on localhost."</h2><p>"Still Here v" {VERSION} " for Apple silicon Macs running macOS 26 or later."</p></div>
             <div class="download-card"><span class="release-label">"v" {VERSION}</span><h3>"Installer in preparation"</h3><p>"The first public installer is being prepared. It will be offered here once signing and Apple notarization are complete."</p><a class="button" href="/docs/getting-started">"Read the installation guide" <span aria-hidden="true">"↗"</span></a><a class="text-link" href="/docs/release">"What’s in v0.1.0 →"</a><p class="download-detail">"Menu bar app + CLI + MCP server"</p></div>
         </div></section>
     }

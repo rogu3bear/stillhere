@@ -1,6 +1,6 @@
-> Inherited leptos-cf strategy record. It describes the template, not term-web.
+> Inherited leptos-cf strategy record. It describes the template, not Still Here.
 > Current product content is in the guide components; site design is
-> `docs/DESIGN.md`, and term-web proposals are in `../IDEAS.md`.
+> `docs/DESIGN.md`, and Still Here proposals are in `../IDEAS.md`.
 
 # Strategy: a reference implementation that survives adoption
 

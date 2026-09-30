@@ -1,9 +1,9 @@
 [package]
-name = "term-web-site"
+name = "stillhere-site"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "Product site and documentation for the term-web Mac utility."
+description = "Product site and documentation for the Still Here Mac utility."
 
 [profile.release]
 opt-level = "s"
@@ -45,7 +45,7 @@ ssr = [
 ]
 
 [package.metadata.leptos]
-output-name = "term-web-site"
+output-name = "stillhere-site"
 site-root = "target/site"
 site-pkg-dir = "pkg"
 style-file = "style/main.css"

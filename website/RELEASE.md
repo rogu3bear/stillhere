@@ -1,8 +1,8 @@
-# term-web v0.1.0 public release
+# Still Here v0.1.0 public release
 
 `0.1.0` is the first planned public version. Earlier `0.3.x` source versions
 were internal development versions; existing Git history and old artifacts are
-preserved. Native `VERSION`, `TermWebVersion.current`, and the website Cargo
+preserved. Native `VERSION`, `StillHereVersion.current`, and the website Cargo
 package version must agree before publication.
 
 ## Local qualification
@@ -25,7 +25,7 @@ qualification, and provider readback are separate proof planes.
 
 ## Installer
 
-Build a fresh `dist/term-web-0.1.0.pkg` with the native repository's packaging
+Build a fresh `dist/stillhere-0.1.0.pkg` with the native repository's packaging
 script. Preserve older versioned packages. Verify signature and payload through
 the existing package checks. Apple notarization and Gatekeeper acceptance are
 required before advertising an ordinary public installer. Once qualified,

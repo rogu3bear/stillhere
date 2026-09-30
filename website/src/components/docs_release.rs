@@ -5,9 +5,9 @@ use leptos_meta::Title;
 #[component]
 pub fn ReleaseGuidePage() -> impl IntoView {
     view! {
-        <Title text="v0.1.0 — term-web"/>
+        <Title text="v0.1.0 — Still Here"/>
         <DocsLayout active="release">
-            <p class="eyebrow">"THE FIRST PUBLIC VERSION"</p><h1>"term-web v0.1.0"</h1>
+            <p class="eyebrow">"THE FIRST PUBLIC VERSION"</p><h1>"Still Here v0.1.0"</h1>
             <p class="doc-lead">"One view of your local servers, their projects, and the agents behind them. The first public installer is in preparation."</p>
             <section><h2>"What’s in this version"</h2><ul><li>"A native Mac menu bar app with server context and confirmed Stop."</li><li>"Project, branch, worktree, framework, uptime, and local HTTP response details."</li><li>"Agent attribution, evidence-based orphan labels, and checkout collision warnings."</li><li>"A CLI for listing, opening, waiting, stopping, and inspecting sessions."</li><li>"A local stdio MCP server and a Claude Code collision hook."</li><li>"Shared ignore settings across the menu, CLI, and MCP server."</li></ul></section>
             <section><h2>"Why v0.1.0?"</h2><p>"Earlier 0.3.x labels were internal development versions. v0.1.0 names the first planned public release; those older labels do not mean a newer public release exists."</p></section>

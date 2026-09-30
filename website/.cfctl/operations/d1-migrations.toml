@@ -1,9 +1,9 @@
 schema_version = 1
 
 [[operation]]
-id = "term-web-site.d1-migrations-apply"
-title = "Apply the term-web-site D1 migrations"
-description = "Apply the repository-bound, append-only term-web-site D1 migration set and verify the Wrangler ledger plus closed schema assertions."
+id = "stillhere-site.d1-migrations-apply"
+title = "Apply the stillhere-site D1 migrations"
+description = "Apply the repository-bound, append-only stillhere-site D1 migration set and verify the Wrangler ledger plus closed schema assertions."
 config_template = "wrangler.toml"
 production_config = "wrangler.production.toml"
 migrations_dir = "migrations"

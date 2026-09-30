@@ -1,4 +1,4 @@
-# Where term-web could go next
+# Where Still Here could go next
 
 These are product proposals, not v0.1.0 features or public roadmap promises.
 The starting point is the shipped detector, native menu, CLI, MCP tools, and
@@ -8,7 +8,7 @@ process identity checks. No new feature below has been implemented in this pass.
 
 Development leaves a lot of state outside the code: a preview in one terminal,
 a server from an old worktree, an agent sharing a checkout, a port occupied by
-something nobody remembers starting. term-web already makes some of that state
+something nobody remembers starting. Still Here already makes some of that state
 visible and actionable. The next step is to explain what changed, who owns it,
 and what a person or agent should do next.
 
@@ -72,8 +72,8 @@ lack enough evidence to act? That evidence should choose the next feature.
 
 ## Current foundations
 
-- `Sources/TermWebCore/Actions/ServerStopper.swift`: verified single-process Stop.
-- `Sources/TermWebApp/Stores/StopFlow.swift`: native confirmation and escalation.
-- `Sources/TermWebCore/Reporting/ServerReport.swift`: server context and evidence.
-- `Sources/TermWebCLI/MCP/MCPTools.swift`: caller ownership and four MCP tools.
-- `Sources/TermWebCore/Sessions/SessionScanner.swift`: session/checkouts inference.
+- `Sources/StillHereCore/Actions/ServerStopper.swift`: verified single-process Stop.
+- `Sources/StillHereApp/Stores/StopFlow.swift`: native confirmation and escalation.
+- `Sources/StillHereCore/Reporting/ServerReport.swift`: server context and evidence.
+- `Sources/StillHereCLI/MCP/MCPTools.swift`: caller ownership and four MCP tools.
+- `Sources/StillHereCore/Sessions/SessionScanner.swift`: session/checkouts inference.

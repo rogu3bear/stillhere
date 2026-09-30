@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="2">
-    <title>term-web</title>
+    <title>Still Here</title>
     <options customize="never" require-scripts="false" hostArchitectures="arm64" rootVolumeOnly="true"/>
     <domains enable_localSystem="true" enable_currentUserHome="false" enable_anywhere="false"/>
     <volume-check>
@@ -10,17 +10,17 @@
     </volume-check>
     <choices-outline>
         <line choice="default">
-            <line choice="com.mlnavigator.term-web.pkg"/>
-            <line choice="com.mlnavigator.term-web.cli.pkg"/>
+            <line choice="com.mlnavigator.stillhere.pkg"/>
+            <line choice="com.mlnavigator.stillhere.cli.pkg"/>
         </line>
     </choices-outline>
     <choice id="default"/>
-    <choice id="com.mlnavigator.term-web.pkg" visible="false">
-        <pkg-ref id="com.mlnavigator.term-web.pkg"/>
+    <choice id="com.mlnavigator.stillhere.pkg" visible="false">
+        <pkg-ref id="com.mlnavigator.stillhere.pkg"/>
     </choice>
-    <choice id="com.mlnavigator.term-web.cli.pkg" visible="false">
-        <pkg-ref id="com.mlnavigator.term-web.cli.pkg"/>
+    <choice id="com.mlnavigator.stillhere.cli.pkg" visible="false">
+        <pkg-ref id="com.mlnavigator.stillhere.cli.pkg"/>
     </choice>
-    <pkg-ref id="com.mlnavigator.term-web.pkg" version="@VERSION@" onConclusion="none">term-web-component.pkg</pkg-ref>
-    <pkg-ref id="com.mlnavigator.term-web.cli.pkg" version="@VERSION@" onConclusion="none">term-web-cli-component.pkg</pkg-ref>
+    <pkg-ref id="com.mlnavigator.stillhere.pkg" version="@VERSION@" onConclusion="none">stillhere-component.pkg</pkg-ref>
+    <pkg-ref id="com.mlnavigator.stillhere.cli.pkg" version="@VERSION@" onConclusion="none">stillhere-cli-component.pkg</pkg-ref>
 </installer-gui-script>

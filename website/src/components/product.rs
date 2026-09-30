@@ -4,7 +4,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[component]
 pub fn Brand() -> impl IntoView {
-    view! { <img class="brand-mark" src="/images/app-icon.png" alt="" width="25" height="25"/><span>"term-web"</span> }
+    view! { <img class="brand-mark" src="/images/app-icon.png" alt="" width="25" height="25"/><span>"Still Here"</span> }
 }
 
 #[component]

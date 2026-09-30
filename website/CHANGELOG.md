@@ -1,8 +1,8 @@
 # Changelog
 
-## term-web 0.1.0 — local release candidate
+## Still Here 0.1.0 — local release candidate
 
-- Adopt the Leptos Cloudflare runtime for term-web's first planned public site.
+- Adopt the Leptos Cloudflare runtime for Still Here's first planned public site.
 - Add a monochrome product page with a real native menu capture and a full
   six-screen gallery, original-image links, and XL/XXL/XXXL responsive layouts.
 - Explain everyday use: identify busy ports, find the right preview, review
