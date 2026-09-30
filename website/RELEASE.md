@@ -34,11 +34,19 @@ installer card to its verified URL; test the download in a browser.
 
 ## Cloudflare
 
-Use `cfctl` through the registered Cloudflare Authority. Bind the intended
+For this Still Here v0.1.0 Pages launch, the user explicitly authorized a
+repository-local routing exception on 2026-09-30: this chat is the sole executor
+using project-local `cfctl`, without the registered Cloudflare Authority chat
+handoff. The exception covers this launch only; it does not change the global
+Authority registry or routing for other repositories. Exact cfctl plans still
+require the user's approval before execution; the executor must never approve
+a plan on the user's behalf.
+
+Bind the intended
 Pages project, account, generated `pages.dev` hostname, source and built assets,
 permissions, rollback, and exact approved plan before a provider mutation.
 Do not provision D1 merely because the inherited template declares a placeholder;
-these product pages do not query it. Resolve that binding with the Authority
+these product pages do not query it. Resolve that binding through cfctl
 before any provider change. Keep provider identities and credentials
 out of tracked source. The canonical local Worker retains
 `main = "build/_worker.js"` and `ASSETS`.
@@ -58,8 +66,9 @@ readback use `cfctl`. A source build or dry run does not establish publication.
 ## Remaining release inputs
 
 The user selected a Pages deployment; use the generated hostname without a
-custom-domain prerequisite. Account/project binding, registered Authority
-clearance, and the exact cfctl plan remain provider prerequisites. The existing
+custom-domain prerequisite. Account/project binding and the user's approval of
+the exact cfctl plan remain provider prerequisites. If creation is necessary,
+prepare a project named `stillhere` with production branch `main`. The existing
 Apple notarytool keychain profile is needed only for the separate installer;
 it does not block publishing the site with its honest availability notice.
 Do not acquire credentials or present an unqualified package as a public download.

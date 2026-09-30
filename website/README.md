@@ -78,10 +78,11 @@ native app's `Packaging/AppIcon.icns`.
 
 ## Release and hosting
 
-Cloudflare publication goes through `cfctl` and the registered Cloudflare
-Authority, following the workspace's governed plan, approval, execution, and
-provider-readback contract. Local Wrangler is used only for local preview and
-deployment dry runs. See `RELEASE.md` for the current release conditions.
+Cloudflare publication goes through `cfctl`, following the governed plan,
+approval, execution, and provider-readback contract. The user authorized a
+Still Here v0.1.0 routing exception for this launch's chat to execute directly;
+see `RELEASE.md` for its scope and required exact-plan approval. Local Wrangler
+is used only for local preview and deployment dry runs.
 
 The requested public target is Cloudflare Pages with its generated `pages.dev`
 hostname. `bun scripts/export-pages.mjs` crawls the ten linked product routes
