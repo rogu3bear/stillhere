@@ -1,5 +1,8 @@
 # term-web
 
+The first planned public release is **v0.1.0**. Earlier `0.3.x` version numbers
+were internal development versions. Existing history and artifacts are retained.
+
 term-web finds the dev servers running on your Mac and traces each one to its
 project, git branch and the coding agent session that started it. You get it
 three ways, all answering from the same detector:
@@ -9,6 +12,12 @@ three ways, all answering from the same detector:
 - a **`term-web` command** for your terminal and scripts
 - an **MCP server** (`term-web mcp`) so Claude Code, Codex and other agents can
   wait for, list and clean up the servers they start
+
+You know something is running, but the terminal is buried, the browser has an
+old preview, and the agent may have finished hours ago. Open one list, find the
+project behind the port, and decide what to keep. If you no longer need a
+server, stop that exact process from the menu instead of hunting for its shell.
+The web guide walks through this workflow and explains what each label proves.
 
 Coding agents start dev servers all day, often in worktrees, and leave them
 running when their session ends. term-web names the agent behind each server
@@ -56,6 +65,11 @@ processes sharing a port get separate entries.
 - Apple silicon (arm64)
 
 ## Install
+
+The v0.1.0 public installer is still in preparation. The package workflow below
+describes the intended installation once the signed, notarized artifact is
+qualified and made available. Contributors with repository access can use
+[Build from source](#build-from-source) today.
 
 Open `term-web-<version>.pkg` and follow the installer. It installs
 `/Applications/term-web.app` and links the command-line tool at
@@ -401,3 +415,14 @@ argument enables notarization; the environment is never consulted.
 ## License
 
 © 2026 MLNavigator Inc. All rights reserved.
+
+## Product website
+
+The Leptos Cloudflare site lives in [website/](website/README.md). It includes
+the product page, actual-screen gallery, seven-page guide, privacy details,
+and XL/XXL/XXXL responsive layouts. The guide covers first run, menu actions,
+Settings, the complete CLI, MCP setup, collision hooks, troubleshooting, and
+v0.1.0 availability. Potential next features are in [IDEAS.md](IDEAS.md);
+they are proposals, not current capabilities.
+Cloudflare publication uses the governed `cfctl` workflow. See
+[website release conditions](website/RELEASE.md).

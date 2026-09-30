@@ -1,0 +1,17 @@
+{
+  "name": "term-web",
+  "short_name": "term-web",
+  "description": "A little clarity for localhost.",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#fafafa",
+  "theme_color": "#fafafa",
+  "icons": [
+    {
+      "src": "/images/app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

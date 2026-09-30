@@ -28,5 +28,10 @@ grep -q "current = \"$VERSION\"" "$ROOT/Sources/TermWebCore/Support/TermWebVersi
 grep -q "preferencesDomain = \"$BUNDLE_ID\"" "$ROOT/Sources/TermWebCore/Classification/IgnoreConfiguration.swift" \
   || { warn "IgnoreConfiguration.preferencesDomain is not BUNDLE_ID ($BUNDLE_ID)"; status=1; }
 
+if [[ -f "$ROOT/website/Cargo.toml" ]]; then
+  grep -q "^version = \"$VERSION\"$" "$ROOT/website/Cargo.toml" \
+    || { warn "website Cargo package version does not match VERSION ($VERSION)"; status=1; }
+fi
+
 [[ $status -eq 0 ]] || die "version settings are out of sync"
 log "Version sync OK (VERSION $VERSION, macOS $MIN_MACOS)"

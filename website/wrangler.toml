@@ -1,0 +1,30 @@
+name = "term-web-site"
+main = "build/_worker.js"
+compatibility_date = "2026-08-10"
+upload_source_maps = true
+
+[build]
+command = "bash ./scripts/build-edge.sh"
+
+[assets]
+directory = "./target/site"
+binding = "ASSETS"
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 0.1
+invocation_logs = true
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 0.01
+
+[[d1_databases]]
+binding = "DB"
+database_name = "term-web-site-db"
+database_id = "00000000-0000-0000-0000-000000000000"
+preview_database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
